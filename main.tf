@@ -24,25 +24,6 @@ variable "db_name" {
   type        = string
 }
 
-
-# data "aws_ami" "my_ubuntu" {
-#   most_recent = true
-#
-#   owners = ["amazon"]
-#   filter {
-#     name   = "architecture"
-#     values = ["x86_64"]
-#   }
-#   filter {
-#     name = "block-device-mapping.delete-on-termination"
-#     values = [true]
-#   }
-#   filter {
-#     name = "name"
-#     values = ["ubuntu/*"]
-#   }
-# }
-
 # Create a security group to allow SSH, HTTP and HTTPS traffic
 resource "aws_security_group" "http_https_ssh" {
   name        = "http-https-ssh-sg"
@@ -142,13 +123,6 @@ resource "aws_security_group" "mail_server" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  # HTTP - to enable HTTPS for secure REST API communication
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }
 
 resource "aws_instance" "my_instance" {
@@ -158,7 +132,7 @@ resource "aws_instance" "my_instance" {
 
   # Associate the security group with the EC2 instance
   security_groups = [aws_security_group.http_https_ssh.name, aws_security_group.mail_server.name]
-  key_name = "MailServerApacheJames"
+  key_name = "AccessKey"
 
   provisioner "file" {
       source      = "./configfiles.zip"
@@ -168,7 +142,7 @@ resource "aws_instance" "my_instance" {
   connection {
     type        = "ssh"
     user        = "ec2-user"
-    private_key = file("./MailServerApacheJames.pem")
+    private_key = file("./AccessKey.pem")
     host        = self.public_ip
   }
 
@@ -202,10 +176,13 @@ resource "aws_instance" "my_instance" {
                 sudo docker run --rm --name post --network newnet -e POSTGRES_USER=${var.db_username} -e POSTGRES_PASSWORD=${var.db_password} -e POSTGRES_DB=${var.db_name}  -e PGDATA=/var/lib/postgresql/data/pgdata -v postgres_data:/var/lib/postgresql/data/pgdata -v /home/ec2-user/postgres/config_files/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf -d postgres:15.12
 
                 #Running the james container
+                  #USING Linagora image
                 sudo docker run -v /home/ec2-user/james/postgres_driver/:/root/james-server-app-3.6.0-SNAPSHOT/conf/lib/ -v /home/ec2-user/james/config_files/james-database.properties:/root/james-server-app-3.6.0-SNAPSHOT/conf/james-database.properties --rm --name james -p110:110 -p25:25 -p431:431 -p8000:8000 --network newnet -d linagora/james-jpa-spring:branch-master
+                  #USING Apache James image
+                #sudo docker run -v /home/ec2-user/james/postgres_driver/:/root/conf/lib/ -v /home/ec2-user/james/config_files/keystore:/root/conf/keystore --rm --name james -p110:110 -p25:25 -p431:431 -p8000:8000 --network newnet -d apache/james:jpa-3.6.1
 
                 #Running the apache webserver
-                sudo docker run --rm --name web -p 80:80 -p443:443 -p8080:8080 -d httpd:2.4
+                #sudo docker run --rm --name web -p 80:80 -p443:443 -p8080:8080 -d httpd:2.4
 
               EOF
 
