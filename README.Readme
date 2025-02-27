@@ -31,7 +31,7 @@ BOTH terrafom.tfvar AND IN CORRESPONDING CONFIG FILE.
     database.username             - the username for the database
     database.password             - the password for the database
     vendorAdapter.database        - the database design, like SQL, POSTGRESQL, etc.
-´´´
+```
 #  Licensed to the Apache Software Foundation (ASF) under one
 #  or more contributor license agreements.  See the NOTICE file
 #  distributed with this work for additional information
@@ -78,7 +78,7 @@ openjpa.streaming=false
 # datasource.validationQueryTimeoutSec=2
 # This is different per database. See https://stackoverflow.com/questions/10684244/dbcp-validationquery-for-different-databases#10684260
 # datasource.validationQuery=select 1
-´´´
+```
 
 2.2- You need to create a keystore file. At the moment I do not know what keystore file is used for.
 You do not need the keystore if you are running the postgres image linagora/james-jpa-spring:branch-master but
@@ -90,31 +90,31 @@ these are the steps to make the keystore:
     run the postgresql and james containers in the terraform.tf file.
 
     2.2.2- Connect to the server with SSH and then run one simple apache/james:jpa-3.6.1 container.
-    ´´´docker run --rm --name james -it -d apache/james:jpa-3.6.1´´´
+    ```docker run --rm --name james -it -d apache/james:jpa-3.6.1```
 
     2.2.3- Switch to the bash of the container
-    ´´´docker exec -it james bash´´´
+    ```docker exec -it james bash```
 
     2.2.4- Run the keytool command to create the keystore
-    ´´´keytool -genkey -alias james -keyalg RSA -keystore keystore´´´
-    In this stage, the code will ask you for a password. The default is ´´´james72laBalle´´´
+    ```keytool -genkey -alias james -keyalg RSA -keystore keystore```
+    In this stage, the code will ask you for a password. The default is ```james72laBalle```
     You need to enter this password two times in the beginning. then you answere some silly questions and
     at the end yes or y. then you would see that a new file nemed "keystore" is created in the folder.
 
     2.2.5- Copy the keystore file from the container to your EC2 instance.
     You first need to exit the container and then using "docker cp" to copy the file to the EC2.
-    ´´´docker cp james:/root/keystore /home/ec2-user/keystore´´´
+    ```docker cp james:/root/keystore /home/ec2-user/keystore```
 
-    do ´´´ls´´´ to make sure the file is copied to the EC2 instance.
+    do ```ls``` to make sure the file is copied to the EC2 instance.
     kill the running james container
-    ´´´docker kill james´´´
+    ```docker kill james```
 
     2.2.6- Now you have the keystore file. test the james container with the new keystore. This time
     you do not deattach from the container run to make sure you would see the james service run successfully.
-    ´´´docker run --rm --name james -it -v /home/ec2-user/keystore:/root/conf/keystore apache/james:jpa-3.6.1´´´
+    ```docker run --rm --name james -it -v /home/ec2-user/keystore:/root/conf/keystore apache/james:jpa-3.6.1```
     Now you should see a beautiful message that the james server is running.
-    ´´´[INFO ] o.a.j.GuiceJamesServer - JAMES server started´´´
-    stop the server by ´´´ctrl+C´´´
+    ```[INFO ] o.a.j.GuiceJamesServer - JAMES server started```
+    stop the server by ```ctrl+C```
 
     2.2.7- Now you have to take the keystore out of the EC2 and place it in the folder
     configfiles.zip/james/config_files/.
@@ -127,7 +127,7 @@ these are the steps to make the keystore:
 
     2.2.8- Copy the file to one of your existing s3 buckets. if you do not have any, you need to make one.
     my bucket name is temp.bucket. Therefore, the command for transferring the file to bucket is:
-    ´´´aws s3 cp /home/ec2-user/keystore s3://temp.bucket/keystore´´´
+    ```aws s3 cp /home/ec2-user/keystore s3://temp.bucket/keystore```
 
     2.2.9- Now you need to download the file from the S3 bucket to your local machine.
     CONGRATULATIONS! you have the keystore file in your local machine. I am sure you can figure
@@ -146,6 +146,7 @@ must be also set equally in the terraform.tfvar file as db_password, and db_name
 
 
 This is the content of your pg_hba.conf
+```
 #Start of pf_hba.com
 # PostgreSQL Client Authentication Configuration File
 # ===================================================
@@ -275,6 +276,4 @@ host    replication     all             127.0.0.1/32            md5
 host    replication     all             ::1/128                 md5
 
 host all all all scram-sha-256
-#End of pg_hba.conf
-
-
+```
