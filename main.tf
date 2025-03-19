@@ -3,19 +3,26 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Define the variables
+# Define the variables. The variables are defined in the terraform.tfvars file
+#AWS related variables
 variable "my_vpc_id" {}
+
+#Database Container related variables
 variable "db-container-name" {}
 variable "db-image" {}
-variable "database_platform" {}
+variable "db_software" {}
 variable "db_driver_className" {}
 variable "db_username" {}
 variable "db_password" {}
 variable "db_name" {}
+
+#James Server related variables
 variable "james-container-name" {}
 variable "james-image" {}
-variable "docker-network" {}
 variable "james_s3_bucket_name" {}
+
+#AWS-EC2 related variables
+variable "docker-network" {}
 variable "ec2-ami" {}
 variable "package-installer" {}
 variable "home-directory" {}
@@ -28,7 +35,7 @@ module "file_gen_pg_hba_conf" {
 
 module "file_gen_james_database_properties" {
   source                = "./file_gen_james_database_properties"
-  database_platform     = var.database_platform
+  db_software           = var.db_software
   db-container-name     = var.db-container-name
   db_username           = var.db_username
   db_password           = var.db_password
@@ -50,7 +57,6 @@ module "sec_grp_mail_server" {
 
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXX Role, Policy, Profile  XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-#TODO: the profile must be moved to a separate module.
 module "profile_gen_EC2_full_Access_to_S3" {
   source = "./profile_gen_EC2FullAccessToS3Bucket"
 }
@@ -115,6 +121,7 @@ resource "aws_instance" "my_instance" {
                 docker run --rm --name ${var.db-container-name} -e MYSQL_DATABASE=${var.db_name} -e MYSQL_ROOT_PASSWORD=${var.db_password} -e MYSQL_USER=${var.db_username} -e MYSQL_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.db-image}
 
                 #USING Apache James image-with keystore
-                docker run --rm --name ${var.james-container-name} --hostname james.local -v ${var.home-directory}james-database.properties:/root/conf/james-database.properties -v ${var.home-directory}bucket/jdbc-driver/mysql-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v ${var.home-directory}bucket/james-keystore/keystore:/root/conf/keystore --network ${var.docker-network} -d ${var.james-image}
+                docker run --rm --name ${var.james-container-name} --hostname james.local -v ${var.home-directory}james-database.properties:/root/conf/james-database.properties -v ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v ${var.home-directory}bucket/james-keystore/keystore:/root/conf/keystore --network ${var.docker-network} -d ${var.james-image}
+
               EOF
 }

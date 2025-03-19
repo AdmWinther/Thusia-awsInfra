@@ -1,4 +1,4 @@
-variable "database_platform" {
+variable "db_software" {
   description = "The platform used for the database, for example, MySQL or PostgreSQL"
 }
 
@@ -30,7 +30,7 @@ resource "local_file" "james_database_properties_file" {
   filename = "james-database.properties"
   content  = <<EOF
 database.driverClassName=${var.db_driver_className}
-database.url=jdbc:${var.database_platform}://${var.db-container-name}/${var.db_name}
+database.url=jdbc:${var.db_software}://${var.db-container-name}/${var.db_name}
 database.username=${var.db_username}
 database.password=${var.db_password}
 EOF
