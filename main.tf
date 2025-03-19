@@ -19,6 +19,15 @@ variable "db-image" {
   type        = string
 }
 
+variable "database_platform" {
+  description = "The platform of the database, for example: MySQL, PostgresSQL, etc."
+}
+
+variable "db_driver_className" {
+  description = "The class name of the JDBC driver."
+  type        = string
+}
+
 variable "db_username" {
   description = "The username for the postgres database which is being made inside the EC2 instance docker image."
   type        = string
@@ -33,6 +42,9 @@ variable "db_name" {
   description = "The name for the postgres database."
   type        = string
 }
+
+variable "james-container-name" {}
+variable "james-image" {}
 
 variable "docker-network" {
   description = "The name for the docker network."
@@ -65,16 +77,19 @@ variable "jdbc-download-address" {
 }
 
 
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_pg_hba_conf" {
   source = "./file_gen_pg_hba_conf"
 }
 
 module "file_gen_james_database_properties" {
-  source            = "./file_gen_james_database_properties"
-  db-container-name = var.db-container-name
-  db_username       = var.db_username
-  db_password       = var.db_password
-  db_name           = var.db_name
+  source                = "./file_gen_james_database_properties"
+  database_platform     = var.database_platform
+  db-container-name     = var.db-container-name
+  db_username           = var.db_username
+  db_password           = var.db_password
+  db_name               = var.db_name
+  db_driver_className   = var.db_driver_className
 }
 
 
@@ -90,72 +105,20 @@ module "sec_grp_mail_server" {
 }
 
 
-#XXXXXXXXXXXXXXXXXXXXXXXXXXXX Role, Policy, Profile XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-#TODO: the profile must be moved to a seprate module.
-# Create an IAM profile for EC2 instance with S3 access
-# 1st. we need to make the role.
-resource "aws_iam_role" "ec2_role" {
-  name               = "role_ec2_full_access_s3"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role_policy.json
-
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXX Role, Policy, Profile  XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#TODO: the profile must be moved to a separate module.
+module "profile_gen_EC2_full_Access_to_S3" {
+  source = "./profile_gen_EC2FullAccessToS3Bucket"
 }
-
-# 2nd. we need to make the policy document. The policy document defines the entities 
-# that the role can be assigned to. We want to assign this role to EC2
-data "aws_iam_policy_document" "ec2_assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-# 3rd. we define the permissions in the policy. Those that take the role
-# can have full access to all S3 buckets. So we create IAM Policy 
-# to give full access to S3 to the EC2 that assume this role.
-resource "aws_iam_policy" "s3_full_access" {
-  name        = "policy_s3_full_access"
-  description = "A policy that allows full access to S3"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "s3:*"
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-# 4th. at the end, we attach the policy to the role.
-# Attach the Policy to the Role
-resource "aws_iam_role_policy_attachment" "ec2_s3_access" {
-  policy_arn = aws_iam_policy.s3_full_access.arn
-  role       = aws_iam_role.ec2_role.name
-}
-
-# 5th, EC2 cannot assume role, because it is not human. it instead can assume
-# profile. so we make a profile and assign the role to the profile. the profile
-# I guess can have more than one role.
-# Create an IAM Instance Profile for the EC2 instance
-resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2_instance_profile"
-  role = aws_iam_role.ec2_role.name
-}
-
 
 
 #______________________________        EC2          _____________________________
 resource "aws_instance" "my_instance" {
-  # ami           = data.aws_ami.my_ubuntu.id # Amazon Linux 2 AMI (Free Tier eligible)
-  ami           = var.ec2-ami # Amazon Linux 2 AMI (Free Tier eligible)
-  instance_type = "t2.micro"  # Free Tier eligible instance type
+  ami           = var.ec2-ami
+  instance_type = "t2.small"
 
-  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+  # iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+  iam_instance_profile = module.profile_gen_EC2_full_Access_to_S3.ec2_full_access_to_s3_bucket_profile_name
   # Associate the security group with the EC2 instance
   security_groups = [module.sec_grp_http_https_ssh.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
   key_name        = "AccessKey"
@@ -187,23 +150,26 @@ resource "aws_instance" "my_instance" {
                 sudo ${var.package-installer} update -y
 
                 #installing unzip
-                sudo ${var.package-installer} install -y unzip
+                #Unzip is not needed. Files are unzipped and placed in the S3 bucket.
+                # sudo ${var.package-installer} install -y unzip
 
                 #Installing AWS cli
                 #sudo ${var.package-installer} install -y aws-cli    #aws-cli is pre-installed on amazon linux EC2
 
                 # Verify unzip installation
-                if ! command -v unzip &> /dev/null
-                then
-                    echo "unzip could not be installed" >&2
-                    exit 1
-                fi
+                #Unzip is not needed. Files are unzipped and placed in the S3 bucket.
+                # if ! command -v unzip &> /dev/null
+                # then
+                #     echo "unzip could not be installed" >&2
+                #     exit 1
+                # fi
 
                 #Unzip the file
                 #unzip ${var.home-directory}configfiles.zip -d ${var.home-directory}
 
                 #download the JDBC driver
-                curl --output ${var.home-directory}postgresql-42.7.5.jar ${var.jdbc-download-address}
+                #This step is not needed. The JDBC driver is downloaded and placed in the S3 bucket
+                #curl --output ${var.home-directory}postgresql-42.7.5.jar ${var.jdbc-download-address}
 
                 #downloading and installing AWS Mountpoint
                 #Mountpoint is used for mounting S3 into the EC2
@@ -222,20 +188,10 @@ resource "aws_instance" "my_instance" {
                 sudo docker network create ${var.docker-network}
                 
                 sudo -s
-                #Running the postgres container
-                docker run --rm --name ${var.db-container-name} -e POSTGRES_DB=${var.db_name} -e POSTGRES_USER=${var.db_username} -e POSTGRES_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.db-image}
+                #MySQL
+                docker run --rm --name ${var.db-container-name} -e MYSQL_DATABASE=${var.db_name} -e MYSQL_ROOT_PASSWORD=${var.db_password} -e MYSQL_USER=${var.db_username} -e MYSQL_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.db-image}
 
-                ###USING Apache James image
-                docker run --rm --name james --hostname james.local -p80:80 -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/postgresql-42.7.5.jar:/root/libs/james-jdbc-driver.jar --network newnet apache/james:jpa-latest --generate-keystore
-
-                #sudo docker run -v ${var.home-directory}james/postgres_driver/postgresql-42.7.5.jar:/root/conf/lib/postgresql-42.7.5.jar -v /${var.home-directory}/james/config_files/keystore:/root/conf/keystore --rm --name james -p110:110 -p25:25 -p431:431 -p8000:8000 --network newnet -d apache/james:jpa-3.6.1
-
-
-                #docker run --rm --name postgres -e POSTGRES_DB=james -e POSTGRES_USER=james -e POSTGRES_PASSWORD=secret1 -p 5433:5432 --network newnet -d postgres:16.3
-                #docker run --rm --name james --hostname james.local -p80:80 -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 -v ./conf/james-database.properties:/root/conf/james-database.properties -v ./conf/lib/postgresql-42.7.5.jar:/root/libs/james-jdbc-driver.jar --network newnet apache/james:jpa-latest --generate-keystore
-
-                #Running the apache webserver
-                #-sudo docker run --rm --name web -p 80:80 -p443:443 -p8080:8080 -d httpd:2.4
-
+                #USING Apache James image-with keystore
+                docker run --rm --name ${var.james-container-name} --hostname james.local -v ${var.home-directory}james-database.properties:/root/conf/james-database.properties -v ${var.home-directory}bucket/jdbc-driver/mysql-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v ${var.home-directory}bucket/james-keystore/keystore:/root/conf/keystore --network ${var.docker-network} -d ${var.james-image}
               EOF
 }

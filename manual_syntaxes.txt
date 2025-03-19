@@ -1,0 +1,44 @@
+
+#Running the database container
+#POSTGRES
+#docker run --rm --name ${var.db-container-name} -e POSTGRES_DB=${var.db_name} -e POSTGRES_USER=${var.db_username} -e POSTGRES_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.db-image}
+#MySQL-manual
+#docker run --rm --name db-cont -e MYSQL_DATABASE=james -e MYSQL_ROOT_PASSWORD=secret1 -e MYSQL_USER=james -e MYSQL_PASSWORD=secret1 --network newnet mysql
+
+
+
+
+
+
+
+
+
+#docker run  -v ${var.home-directory}bucket/jdbc-driver/${var.database_platform}-jdbc-driver.jar:/root/conf/lib/database-jdbc-driver.jar -v ${var.home-directory}bucket/james-keystore/keystore:/root/conf/keystore --rm --name james -p110:110 -p25:25 -p431:431 -p8000:8000 --network newnet -d apache/james:jpa-3.6.1
+#USING Apache James image-without keystore
+#docker run  -v ${var.home-directory}bucket/jdbc-driver/${var.database_platform}-jdbc-driver.jar:/root/conf/lib/database-jdbc-driver.jar --rm --name james -p110:110 -p25:25 -p431:431 -p8000:8000 --network newnet -d apache/james:jpa-3.6.1 --generate-keystore
+#USING Apache James image-WITH keystore -WITH KEYSTORE
+
+#James+Postgres-manual
+#docker run --rm --name james --hostname james.local -p80:80 -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/bucket/jdbc-driver/postgres-jdbc-driver.jar:/root/libs/james-jdbc-driver.jar --network newnet apache/james:jpa-latest --generate-keystore
+#James+MySQL-manual !!!!!!!!!!IT WOOOOOORRRKKKKKKSSSS!!!!!!!!!!!
+#docker run --rm --name james --hostname james.local -p80:80 -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/bucket/jdbc-driver/mysql-jdbc-driver.jar:/root/libs/james-jdbc-driver.jar --network newnet apache/james:jpa-latest --generate-keystore
+#James+MySQL+keystore-manual !!!!!!!!!!IT WOOOOOORRRKKKKKKSSSS!!!!!!!!!!!
+#docker run --rm --name james --hostname james.local -p80:80 -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/bucket/jdbc-driver/mysql-jdbc-driver.jar:/root/libs/james-jdbc-driver.jar -v /home/ec2-user/bucket/james-keystore/keystore:/root/conf/keystore --network newnet apache/james:jpa-latest
+
+#Running the apache webserver
+# sudo docker run --rm --name web -p 80:80 -p443:443 -p8080:8080 -d httpd:2.4
+
+
+
+docker run --rm --name james --hostname james.local -v ${var.home-directory}james-database.properties:/root/conf/james-database.properties -v ${var.home-directory}bucket/jdbc-driver/${var.database_platform}-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v ${var.home-directory}bucket/james-keystore/keystore:/root/conf/keystore -p110:110 -p25:25 -p431:431 -p8000:8000 --network newnet -d apache/james:jpa-3.6.1
+
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+WWWWWWWWWWWWWWWOOOOOOOOOOOOOOOOORRRRRRRRRRRRKKKKKKKKKKKKKSSSSSSSSSSS
+#MySQL
+docker run --rm --name db-cont -e MYSQL_DATABASE=james -e MYSQL_ROOT_PASSWORD=secret1 -e MYSQL_USER=james -e MYSQL_PASSWORD=secret1 --network newnet -d mysql
+
+#USING Apache James image-with keystore
+docker run --rm --name james --hostname james.local -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/bucket/jdbc-driver/mysql-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar --network newnet apache/james:jpa-3.8.2 --generate-keystore
