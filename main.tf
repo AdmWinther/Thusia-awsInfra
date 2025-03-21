@@ -119,6 +119,11 @@ resource "aws_instance" "my_instance" {
     destination = "/${var.home-directory}/keystore"
   }
 
+  provisioner "file" {
+    source      = "./database_init.sql"
+    destination = "/${var.home-directory}/database_init.sql"
+  }
+
   connection {
     type        = "ssh"
     user        = "ec2-user"

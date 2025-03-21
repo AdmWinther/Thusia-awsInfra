@@ -34,6 +34,12 @@ module "file_gen_james_database_properties" {
   james_db_name         = var.james_db_name
 }
 
+module "file_gen_database_init" {
+  source = "../file_gen_database_init"
+  james_db_name = var.james_db_name
+  crm_db_name   = var.crm-db-name
+}
+
 module "file_gen_pg_hba_conf" {
   source = "../file_gen_pg_hba_conf"
 }
@@ -50,6 +56,10 @@ services:
     image: ${var.db-docker-image}
     container_name: ${var.db-container-name}
     restart: always
+    volumes:
+      - type: bind
+        source: ${var.home-directory}database_init.sql
+        target: /docker-entrypoint-initdb.d/database_init.sql
     environment:
       MYSQL_ROOT_PASSWORD: ${var.db_password}
       MYSQL_DATABASE: ${var.james_db_name}
