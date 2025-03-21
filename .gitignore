@@ -1,5 +1,6 @@
 ### Terraform ###
 /.terraform/
+/test-module/
 *.tfvars
 
 ### config files ####

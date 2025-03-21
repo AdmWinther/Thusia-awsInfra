@@ -7,40 +7,60 @@ provider "aws" {
 #AWS related variables
 variable "my_vpc_id" {}
 
+#Docker related variables
+variable "docker-network" {}
+variable "package-installer" {}
+
 #Database Container related variables
 variable "db-container-name" {}
-variable "db-image" {}
+variable "db-docker-image" {}
 variable "db_software" {}
 variable "db_driver_className" {}
 variable "db_username" {}
 variable "db_password" {}
-variable "db_name" {}
 
 #James Server related variables
+variable "james_db_name" {}
 variable "james-container-name" {}
-variable "james-image" {}
+variable "james-docker-image" {}
 variable "james_s3_bucket_name" {}
 
+#CRM related variables
+variable "crm-container-name" {}
+variable "crm-docker-image" {}
+variable "crm-db-name" {}
+variable "crm-volume-name" {}
+
+
 #AWS-EC2 related variables
-variable "docker-network" {}
 variable "ec2-ami" {}
-variable "package-installer" {}
 variable "home-directory" {}
 
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-module "file_gen_pg_hba_conf" {
-  source = "./file_gen_pg_hba_conf"
-}
+module "file_gen_docker_compose_yml" {
+  source                = "./file_gen_docker_compose_yml"
 
-module "file_gen_james_database_properties" {
-  source                = "./file_gen_james_database_properties"
+  home-directory        = var.home-directory
+  docker-network        = var.docker-network
+
   db_software           = var.db_software
   db-container-name     = var.db-container-name
   db_username           = var.db_username
   db_password           = var.db_password
-  db_name               = var.db_name
   db_driver_className   = var.db_driver_className
+  db-docker-image       = var.db-docker-image
+
+
+  james-container-name  = var.james-container-name
+  james-docker-image    = var.james-docker-image
+  james_db_name               = var.james_db_name
+  james_s3_bucket_name        = var.james_s3_bucket_name
+
+  crm-container-name    = var.crm-container-name
+  crm-docker-image      = var.crm-docker-image
+  crm-db-name           = var.crm-db-name
+  crm-volume-name       = var.crm-volume-name
 }
 
 
@@ -84,6 +104,21 @@ resource "aws_instance" "my_instance" {
     destination = "/${var.home-directory}/pg_hba.conf"
   }
 
+  provisioner "file" {
+    source      = "./compose.yml"
+    destination = "/${var.home-directory}/compose.yml"
+  }
+
+  provisioner "file" {
+    source      = "./mysql-jdbc-driver.jar"
+    destination = "/${var.home-directory}/mysql-jdbc-driver.jar"
+  }
+
+  provisioner "file" {
+    source      = "./keystore"
+    destination = "/${var.home-directory}/keystore"
+  }
+
   connection {
     type        = "ssh"
     user        = "ec2-user"
@@ -92,7 +127,7 @@ resource "aws_instance" "my_instance" {
   }
 
   tags = {
-    Name = "V2.James"
+    Name = "THUSIA-V1"
   }
 
   user_data = <<-EOF
@@ -115,13 +150,28 @@ resource "aws_instance" "my_instance" {
                 sudo service docker start
                 sudo usermod -a -G docker ubuntu
                 sudo docker network create ${var.docker-network}
-                
+
+                #Installing docker-compose
+                sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d'"' -f4)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
+
                 sudo -s
+                cp ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar ${var.docker-network}jdbc-driver.jar
+                cp ${var.home-directory}bucket/james-keystore/keystore ${var.docker-network}keystore
+
                 #MySQL
-                docker run --rm --name ${var.db-container-name} -e MYSQL_DATABASE=${var.db_name} -e MYSQL_ROOT_PASSWORD=${var.db_password} -e MYSQL_USER=${var.db_username} -e MYSQL_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.db-image}
+                #docker run --rm --name ${var.db-container-name} -e MYSQL_DATABASE=${var.james_db_name} -e MYSQL_ROOT_PASSWORD=${var.db_password} -e MYSQL_USER=${var.db_username} -e MYSQL_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.db-docker-image}
 
                 #USING Apache James image-with keystore
-                docker run --rm --name ${var.james-container-name} --hostname james.local -v ${var.home-directory}james-database.properties:/root/conf/james-database.properties -v ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v ${var.home-directory}bucket/james-keystore/keystore:/root/conf/keystore --network ${var.docker-network} -d ${var.james-image}
+                #docker run --rm --name ${var.james-container-name} --hostname james.local -v ${var.home-directory}james-database.properties:/root/conf/james-database.properties -v ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v ${var.home-directory}bucket/james-keystore/keystore:/root/conf/keystore --network ${var.docker-network} -d ${var.james-docker-image}
+
+                #SuiteCRM
+                #docker volume create --name ${var.crm-volume-name}
+                #docker run --rm --name ${var.crm-container-name} -e MYSQL_ROOT_PASSWORD=${var.db_password} -e MYSQL_USER=${var.db_username} -e MYSQL_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.crm-docker-image}
 
               EOF
+}
+
+output "ssh_connection_string" {
+  value = "ssh -i ${"AccessKey.pem"} ec2-user@${aws_instance.my_instance.public_ip}"
 }

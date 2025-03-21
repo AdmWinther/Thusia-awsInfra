@@ -73,4 +73,15 @@ package-installer = "yum"
 home-directory = "/home/ec2-user/"
 
 
+########################       SuiteCRM PARAMETERS        ########################
+#CRM container name
+crm-container-name = "crm-cont"
+
+#CRM image
+#We are using the SuiteCRM image from the docker hub. The image is called "bitnami/suitecrm:8.8.0"
+crm-image = "bitnami/suitecrm:8.8.0"
+
+#CRM Data
+#We need to make a docker volume to store CRM data. The volume name is stored in "crm-data"
+crm-data = "crm-data"
 
