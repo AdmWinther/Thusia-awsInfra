@@ -15,12 +15,13 @@ variable "package-installer" {}
 variable "db-container-name" {}
 variable "db-docker-image" {}
 variable "db_software" {}
+variable "db_root_password" {}
 variable "db_driver_className" {}
-variable "db_username" {}
-variable "db_password" {}
 
 #James Server related variables
 variable "james_db_name" {}
+variable "james_db_username" {}
+variable "james_db_password" {}
 variable "james-container-name" {}
 variable "james-docker-image" {}
 variable "james_s3_bucket_name" {}
@@ -29,6 +30,8 @@ variable "james_s3_bucket_name" {}
 variable "crm-container-name" {}
 variable "crm-docker-image" {}
 variable "crm-db-name" {}
+variable "crm-db-username" {}
+variable "crm-db-password" {}
 variable "crm-volume-name" {}
 
 
@@ -46,20 +49,23 @@ module "file_gen_docker_compose_yml" {
 
   db_software           = var.db_software
   db-container-name     = var.db-container-name
-  db_username           = var.db_username
-  db_password           = var.db_password
-  db_driver_className   = var.db_driver_className
   db-docker-image       = var.db-docker-image
+  db_root_password      = var.db_root_password
+  db_driver_className   = var.db_driver_className
 
 
   james-container-name  = var.james-container-name
   james-docker-image    = var.james-docker-image
   james_db_name               = var.james_db_name
+  james_db_username           = var.james_db_username
+  james_db_password           = var.james_db_password
   james_s3_bucket_name        = var.james_s3_bucket_name
 
   crm-container-name    = var.crm-container-name
   crm-docker-image      = var.crm-docker-image
   crm-db-name           = var.crm-db-name
+  crm-db-username       = var.crm-db-username
+  crm-db-password       = var.crm-db-password
   crm-volume-name       = var.crm-volume-name
 }
 
@@ -163,16 +169,6 @@ resource "aws_instance" "my_instance" {
                 sudo -s
                 cp ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar ${var.docker-network}jdbc-driver.jar
                 cp ${var.home-directory}bucket/james-keystore/keystore ${var.docker-network}keystore
-
-                #MySQL
-                #docker run --rm --name ${var.db-container-name} -e MYSQL_DATABASE=${var.james_db_name} -e MYSQL_ROOT_PASSWORD=${var.db_password} -e MYSQL_USER=${var.db_username} -e MYSQL_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.db-docker-image}
-
-                #USING Apache James image-with keystore
-                #docker run --rm --name ${var.james-container-name} --hostname james.local -v ${var.home-directory}james-database.properties:/root/conf/james-database.properties -v ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v ${var.home-directory}bucket/james-keystore/keystore:/root/conf/keystore --network ${var.docker-network} -d ${var.james-docker-image}
-
-                #SuiteCRM
-                #docker volume create --name ${var.crm-volume-name}
-                #docker run --rm --name ${var.crm-container-name} -e MYSQL_ROOT_PASSWORD=${var.db_password} -e MYSQL_USER=${var.db_username} -e MYSQL_PASSWORD=${var.db_password} --network ${var.docker-network} -d ${var.crm-docker-image}
 
               EOF
 }

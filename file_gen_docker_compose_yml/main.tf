@@ -7,12 +7,13 @@ variable "docker-network" {}
 variable "db-container-name" {}
 variable "db-docker-image" {}
 variable "db_software" {}
+variable "db_root_password" {}
 variable "db_driver_className" {}
-variable "db_username" {}
-variable "db_password" {}
 
 #James Server related variables
 variable "james_db_name" {}
+variable "james_db_username" {}
+variable "james_db_password" {}
 variable "james-container-name" {}
 variable "james-docker-image" {}
 variable "james_s3_bucket_name" {}
@@ -21,14 +22,16 @@ variable "james_s3_bucket_name" {}
 variable "crm-container-name" {}
 variable "crm-docker-image" {}
 variable "crm-db-name" {}
+variable "crm-db-username" {}
+variable "crm-db-password" {}
 variable "crm-volume-name" {}
 
 module "file_gen_james_database_properties" {
   source = "../file_gen_james_database_properties"
   db_software           = var.db_software
   db-container-name     = var.db-container-name
-  db_username           = var.db_username
-  db_password           = var.db_password
+  james_db_username           = var.james_db_username
+  james_db_password           = var.james_db_password
   db_driver_className   = var.db_driver_className
 
   james_db_name         = var.james_db_name
@@ -37,7 +40,11 @@ module "file_gen_james_database_properties" {
 module "file_gen_database_init" {
   source = "../file_gen_database_init"
   james_db_name = var.james_db_name
+  james_db_username = var.james_db_username
+  james_db_password = var.james_db_password
   crm_db_name   = var.crm-db-name
+  crm_db_username   = var.crm-db-username
+  crm_db_password   = var.crm-db-password
 }
 
 module "file_gen_pg_hba_conf" {
@@ -57,14 +64,9 @@ services:
     container_name: ${var.db-container-name}
     restart: always
     volumes:
-      - type: bind
-        source: ${var.home-directory}database_init.sql
-        target: /docker-entrypoint-initdb.d/database_init.sql
+      - ${var.home-directory}database_init.sql:/docker-entrypoint-initdb.d/database_init.sql
     environment:
-      MYSQL_ROOT_PASSWORD: ${var.db_password}
-      MYSQL_DATABASE: ${var.james_db_name}
-      MYSQL_USER: ${var.db_username}
-      MYSQL_PASSWORD: ${var.db_password}
+      MYSQL_ROOT_PASSWORD: ${var.db_root_password}
     networks:
       - ${var.docker-network}
 
