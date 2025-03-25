@@ -7,48 +7,58 @@ How to run the server:
 
 1- You need to add your access key file with name AccessKey.pem in this folder. The file
 will be generated on AWS.
-2- You need to make configfiles.zip with the following structure
-PLEASE NOTE: the zip file structure must be exactly like this, otherwise it is not going to work
-configfiles.zip
+
+2- You need to make a series of configuration files.
+
+```
     ├───james
     │   ├───config_files
     │	│	├───james-database.properties	(see section 2.1)
-    │	│	└───keystore			(see section 2.2)
-    │   └───postgres_driver
-    │		└───postgresql-42.7.5.jar	(see section 2.3)
-    └───postgres
+    │	│	└───keystore                    (see section 2.2)
+    │   └───JDBC_driver
+    │		└───mysql-jdbc-driver.jar      (see section 2.3)
+    └───mysql
         └───config_files
-            └───pg_hba.conf			(see section 2.4)
-
+            ├───pg_hba.conf		        (see section 2.4)
+            └───database_init.sql	        (see section 2.5)
+```
 
 IMPORTANT: REMEMBER IF YOU WANT TO CHANGE PASSWORDS OR NAMES, YOU MUST SET THE VARIABLES IN
-BOTH terrafom.tfvar AND IN CORRESPONDING CONFIG FILE.
+BOTH ```terrafom.tfvar``` AND IN CORRESPONDING CONFIG FILE.
 
 
-2.1- Your james-database.properties should look like this. Important parameters are:
+<h2>2.1</h2>- Your james-database.properties you should have the following parameters:
+
+```
     database.driverClassName      - the driver class name for the database
     database.url                  - the url or the connection url for the database
     database.username             - the username for the database
     database.password             - the password for the database
     vendorAdapter.database        - the database design, like SQL, POSTGRESQL, etc.
+```
+
+for mysql database, the file should look like this:
 
 ```
-database.driverClassName=org.postgresql.Driver
-database.url=jdbc:postgresql://post/db_name
+database.driverClassName=com.mysql.cj.jdbc.Driver
+database.url=jdbc:mysql://The_server_address/db_name
 database.username=DB_USERNAME
 database.password=DB_PASSWORD
 ```
 
-2.2- You need to create a keystore file. At the moment I do not know what keystore file is used for.
+Since we make a docker network and all of the containers are in the same network, we do not need to add prot at
+the end of the server address, otherwise we need that.
+
+<h2>2.2</h2>- You need to create a keystore file. At the moment I do not know what keystore file is used for.
 You do not need the keystore if you are running the postgres image linagora/james-jpa-spring:branch-master but
 if you decide to switch to apache/james:jpa-3.6.1 or higher, you need the keystore.
 Keystore is made using JAVA OpenJDK. You MUST make the keystore from inside the james container itself otherwise
 because the JDK would be different, you would not get it decode.to store the password for the database.
 these are the steps to make the keystore:
-2.2.1- Run the server without James any container. You can comment the lines that
+<h3>2.2.1</h3>- Run the server without James any container. You can comment the lines that
     run the postgresql and james containers in the terraform.tf file.
 
-2.2.2- Connect to the server with SSH and then run one simple apache/james:jpa-3.6.1 container.
+<h3>2.2.2</h3>- Connect to the server with SSH and then run one simple apache/james:jpa-3.6.1 container.
     ```docker run --rm --name james -it -d apache/james:jpa-3.6.1```
 
     2.2.3- Switch to the bash of the container
@@ -93,14 +103,14 @@ CONGRATULATIONS! you have the keystore file in your local machine. I am sure you
 out the rest by yourself.
 
 
-2.3-You need to download file postgresql-42.7.5.jar from https://jdbc.postgresql.org/download/ and
+<h2>2.3</h2>-You need to download file postgresql-42.7.5.jar from https://jdbc.postgresql.org/download/ and
 place it in the folder configfiles.zip/james/postgres_driver/
 
 
 
 
 
-2.4 The database password and name you set in james-database.properties as db_password, db_name
+<h2>2.4</h2> The database password and name you set in james-database.properties as db_password, db_name
 must be also set equally in the terraform.tfvar file as db_password, and db_name respectively)
 
 
@@ -122,3 +132,44 @@ host    replication     all             ::1/128                 md5
 
 host all all all scram-sha-256
 ```
+
+<h2>2.5</h2>
+file ``` database_init.sql``` is the file that is used to initialize the database. The file should have the following content:
+
+```
+CREATE DATABASE ${var.james_db_name};
+CREATE USER '${var.james_db_username}'@'%' IDENTIFIED BY '${var.james_db_password}';
+GRANT ALL PRIVILEGES ON ${var.james_db_name}.* TO '${var.james_db_username}'@'%';
+
+
+CREATE DATABASE ${var.crm_db_name};
+CREATE USER '${var.crm_db_username}'@'%' IDENTIFIED BY '${var.crm_db_password}';
+GRANT ALL PRIVILEGES ON ${var.crm_db_name}.* TO '${var.crm_db_username}'@'%';
+```
+
+<h2>2.6</h2>
+To store the database data you need to create a volume in AWS EBS. The volume should be at least 10GB.
+#First make a EBC volume in AWS console/EC2/volume, get the volume id and attach it to the instance.
+#The Terraform code already attach the EBC volume to the instance. you just need to replace the vollume-id in the code.
+Volume will be mounted at /dev/vsdd
+#If the volume is new, you need to fomat it. This is needed for the first time after creating the volume.
+sudo mkfs -t ext4 /dev/sdd
+
+#Then create a directory to mount the volume: Run EC2. Terraform must already mount the EBC in /var/lib/docker/volume/
+sudo mount /dev/vxdd /var/lib/docker/volumes
+
+#make a folder for database volume
+mkdir /home/ec2-user/bucket/volumes/database
+
+#Change the ownership of the directory to mysql
+sudo chown -R 999:999 /var/lib/docker/volumes/database
+
+#Then run the database container and mount the volume to the container
+docker run --rm --name db-cont -v /home/ec2-user/volumes/database:/var/lib/mysql -v /home/ec2-user/database-init.sql:/docker-entrypoint-initdb.d/database_init.sql -e MYSQL_ROOT_PASSWORD=rootsecret --network my-docker-network -d mysql:9.2.0
+
+#hereafter, we can run the following command to start the database container. we do not need to mount database_init.sql file anymore.
+docker run --rm --name db-cont -v /home/ec2-user/volumes/database:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=rootsecret --network my-docker-network -d mysql:9.2.0
+
+ 
+JAMES
+docker run --rm --name james-cont -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/mysql-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v /home/ec2-user/keystore:/root/conf/keystore -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 --network my-docker-network -d apache/james:jpa-3.8.2

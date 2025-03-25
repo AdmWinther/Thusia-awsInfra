@@ -18,6 +18,10 @@ variable "james-container-name" {}
 variable "james-docker-image" {}
 variable "james_s3_bucket_name" {}
 
+#APACHE WEB related variables
+variable "apache-docker-image" {}
+variable "apache-container-name" {}
+
 #CRM related variables
 variable "crm-container-name" {}
 variable "crm-docker-image" {}
@@ -64,7 +68,9 @@ services:
     container_name: ${var.db-container-name}
     restart: always
     volumes:
-      - ${var.home-directory}database_init.sql:/docker-entrypoint-initdb.d/database_init.sql
+      - ${var.home-directory}/volumes/database:/var/lib/mysql
+      #this line needs to be executed just the first time. It is needed for making the users and databases.
+      #- ${var.home-directory}database_init.sql:/docker-entrypoint-initdb.d/database_init.sql
     environment:
       MYSQL_ROOT_PASSWORD: ${var.db_root_password}
     networks:
@@ -88,10 +94,27 @@ services:
         source: ${var.home-directory}keystore
         target: /root/conf/keystore
 
+    ports:
+      - "25:25"
+      - "110:110"
+      - "143:143"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+      - "8000:8000"
+
     networks:
       - ${var.docker-network}
     depends_on:
       - mysql
+
+  web:
+    image: ${var.apache-docker-image}
+    container_name: ${var.apache-container-name}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
 
 networks:
   ${var.docker-network}:
