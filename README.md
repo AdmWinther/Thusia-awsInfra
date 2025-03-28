@@ -151,25 +151,74 @@ GRANT ALL PRIVILEGES ON ${var.crm_db_name}.* TO '${var.crm_db_username}'@'%';
 To store the database data you need to create a volume in AWS EBS. The volume should be at least 10GB.
 #First make a EBC volume in AWS console/EC2/volume, get the volume id and attach it to the instance.
 #The Terraform code already attach the EBC volume to the instance. you just need to replace the vollume-id in the code.
-Volume will be mounted at /dev/vsdd
+```
+Volume will be mounted at /dev/xvdd
+```
 #If the volume is new, you need to fomat it. This is needed for the first time after creating the volume.
-sudo mkfs -t ext4 /dev/sdd
+```
+sudo mkfs -t ext4 /dev/xvdd
+```
 
 #Then create a directory to mount the volume: Run EC2. Terraform must already mount the EBC in /var/lib/docker/volume/
-sudo mount /dev/vxdd /var/lib/docker/volumes
+```
+sudo mount /dev/xvdd /home/ec2-user/volumes
+```
 
 #make a folder for database volume
-mkdir /home/ec2-user/bucket/volumes/database
-
+```
+mkdir /home/ec2-user/volumes/database
+```
 #Change the ownership of the directory to mysql
-sudo chown -R 999:999 /var/lib/docker/volumes/database
+```
+sudo chown -R 999:999 /home/ec2-user/volumes/database
+```
 
 #Then run the database container and mount the volume to the container
-docker run --rm --name db-cont -v /home/ec2-user/volumes/database:/var/lib/mysql -v /home/ec2-user/database-init.sql:/docker-entrypoint-initdb.d/database_init.sql -e MYSQL_ROOT_PASSWORD=rootsecret --network my-docker-network -d mysql:9.2.0
+```
+docker run --rm --name mariadb -v /home/ec2-user/volumes/database:/var/lib/mysql -v /home/ec2-user/database_init.sql:/docker-entrypoint-initdb.d/database_init.sql -e MARIADB_ROOT_PASSWORD=rootsecret --network my-docker-network mariadb:10.6
+```
+
 
 #hereafter, we can run the following command to start the database container. we do not need to mount database_init.sql file anymore.
-docker run --rm --name db-cont -v /home/ec2-user/volumes/database:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=rootsecret --network my-docker-network -d mysql:9.2.0
+```
+docker run --rm --name mariadb -v /home/ec2-user/volumes/database:/var/lib/mysql -e MARIADB_ROOT_PASSWORD=rootsecret --network my-docker-network mariadb:10.6
+```
 
- 
-JAMES
-docker run --rm --name james-cont -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/mysql-jdbc-driver.jar:/root/libs/database-jdbc-driver.jar -v /home/ec2-user/keystore:/root/conf/keystore -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 --network my-docker-network -d apache/james:jpa-3.8.2
+<h2>James</h2>
+```
+docker run --rm --name james -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/jdbc.jar:/root/libs/jdbc.jar -v /home/ec2-user/keystore:/root/conf/keystore -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 --network my-docker-network -d apache/james:jpa-3.8.2
+```
+
+
+<h2>SuiteCRM</h2>
+Running SuiteCRM is very simple. You just need to run the following command:
+
+
+
+The database for CRM must be built seprately.
+```
+docker run --rm --name mariadb -e ALLOW_EMPTY_PASSWORD=yes -e MARIADB_ROOT_PASSWORD=rootsecret -e MARIADB_USER=crmdb -e MARIADB_PASSWORD=rootsecret -e MARIADB_DATABASE=crmdb --network my-docker-network -v /home/ec2-user/volumes/suite_crm:/var/lib/mysql mariadb:10.6
+```
+
+and then running SuiteCRM
+```
+docker run --rm --name suitecrm \
+  -p 8080:8080 -p 8443:8443 \
+  -e ALLOW_EMPTY_PASSWORD=yes \
+  -e SUITECRM_DATABASE_USER=crmdb \
+  --env SUITECRM_DATABASE_PASSWORD=rootsecret \
+  --env SUITECRM_DATABASE_NAME=crmdb \
+  --network my-docker-network \
+  --volume /home/ec2-user/vbb:/bitnami/suitecrm \
+  bitnami/suitecrm:latest
+```
+
+docker run --rm --name suitecrm \
+-p 8080:8080 -p 8443:8443 \
+-e ALLOW_EMPTY_PASSWORD=yes \
+-e SUITECRM_DATABASE_USER=adam \
+--env SUITECRM_DATABASE_PASSWORD=adamsecret \
+--env SUITECRM_DATABASE_NAME=crmdb \
+--network my-docker-network \
+--volume /home/ec2-user/vvv:/bitnami/suitecrm \
+bitnami/suitecrm:latest

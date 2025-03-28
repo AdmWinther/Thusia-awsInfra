@@ -57,6 +57,10 @@ variable "crm-volume-name" {}
 variable "ec2-ami" {}
 variable "home-directory" {}
 
+#EBC volume related variables
+variable "volume-initialize" {}
+variable "volume-id" {}
+
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_docker_compose_yml" {
@@ -88,6 +92,8 @@ module "file_gen_docker_compose_yml" {
   crm-db-username       = var.crm-db-username
   crm-db-password       = var.crm-db-password
   crm-volume-name       = var.crm-volume-name
+
+  volume-initialize     = var.volume-initialize
 }
 
 
@@ -110,10 +116,10 @@ module "profile_gen_EC2_full_Access_to_S3" {
 
 
 #______________________________        EC2          _____________________________
-data "aws_ebs_volume" "thusia_database" {
+data "aws_ebs_volume" "thusia_volume" {
   filter {
     name   = "volume-id"
-    values = ["vol-04bfd942d4a091390"]  # Replace with your existing EBS volume ID
+    values = [var.volume-id]  # Replace with your existing EBS volume ID
   }
 }
 
@@ -136,18 +142,13 @@ resource "aws_instance" "my_instance" {
   }
 
   provisioner "file" {
-    source      = "./pg_hba.conf"
-    destination = "/${var.home-directory}/pg_hba.conf"
-  }
-
-  provisioner "file" {
     source      = "./compose.yml"
     destination = "/${var.home-directory}/compose.yml"
   }
 
   provisioner "file" {
-    source      = "./mysql-jdbc-driver.jar"
-    destination = "/${var.home-directory}/mysql-jdbc-driver.jar"
+    source      = "./jdbc.jar"
+    destination = "/${var.home-directory}/jdbc.jar"
   }
 
   provisioner "file" {
@@ -187,10 +188,20 @@ resource "aws_instance" "my_instance" {
 
                 #Make a directory to mount all of the volumes in it.
                 sudo mkdir ${var.home-directory}volumes/
-                # sudo mkdir ${var.home-directory}volumes/database/
+
+                #format the attached EBS volume only if variable "volume-initialize" is set to true
+                if [ "${var.volume-initialize}" == "true" ]; then
+                  sudo mkfs -t ext4 /dev/xvdd
+                fi
 
                 # mount the EBS volume into the EC2
                 sudo mount /dev/xvdd /home/ec2-user/volumes/
+
+                #create a folder in the volume for the database, only if the variable "volume-initialize" is set to true
+                if [ "${var.volume-initialize}" == "true" ]; then
+                  sudo mkdir ${var.home-directory}volumes/database/
+                fi
+
 
                 #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
                 sudo chown -R 999:999 /var/lib/docker/volumes/database
@@ -209,13 +220,13 @@ resource "aws_instance" "my_instance" {
                 # cp ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar ${var.docker-network}jdbc-driver.jar
                 # cp ${var.home-directory}bucket/james-keystore/keystore ${var.docker-network}keystore
 
-                docker-compose -f ${var.home-directory}compose.yml up -d
+                # docker-compose -f ${var.home-directory}compose.yml up -d
               EOF
 }
 
 resource "aws_volume_attachment" "attach_volume_to_ec2" {
   instance_id = aws_instance.my_instance.id
-  volume_id   = data.aws_ebs_volume.thusia_database.id
+  volume_id   = data.aws_ebs_volume.thusia_volume.id
   device_name = "/dev/xvdd"  # The device name to expose to the instance
 
 }

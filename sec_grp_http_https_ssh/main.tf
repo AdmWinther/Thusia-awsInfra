@@ -16,6 +16,23 @@ resource "aws_security_group" "http_https_ssh" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # For the Apache James server REST APIs, we need to allow port 8000
+  ingress {
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+    # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8081
+  ingress {
+    from_port   = 8081
+    to_port     = 8081
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+
   #allow HTTPS
   ingress {
     from_port   = 443
