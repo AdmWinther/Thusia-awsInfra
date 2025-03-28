@@ -205,12 +205,12 @@ and then running SuiteCRM
 docker run --rm --name suitecrm \
   -p 8080:8080 -p 8443:8443 \
   -e ALLOW_EMPTY_PASSWORD=yes \
-  -e SUITECRM_DATABASE_USER=crmdb \
-  --env SUITECRM_DATABASE_PASSWORD=rootsecret \
+  -e SUITECRM_DATABASE_USER=adam \
+  --env SUITECRM_DATABASE_PASSWORD=adamsecret \
   --env SUITECRM_DATABASE_NAME=crmdb \
-  --network my-docker-network \
-  --volume /home/ec2-user/vbb:/bitnami/suitecrm \
-  bitnami/suitecrm:latest
+  --network thusia_my-docker-network \
+  --volume /home/ec2-user/volumes/suitecrm:/bitnami/suitecrm \
+  bitnami/suitecrm:8.8.0
 ```
 
 docker run --rm --name suitecrm \

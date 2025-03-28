@@ -9,6 +9,7 @@ variable "db-docker-image" {}
 variable "db_software" {}
 variable "db_root_password" {}
 variable "db_driver_className" {}
+variable "db_volume" {}
 
 #James Server related variables
 variable "james_db_name" {}
@@ -28,7 +29,7 @@ variable "crm-docker-image" {}
 variable "crm-db-name" {}
 variable "crm-db-username" {}
 variable "crm-db-password" {}
-variable "crm-volume-name" {}
+variable "crm_volume" {}
 
 #EBC volume related variables
 variable "volume-initialize" {}
@@ -74,7 +75,7 @@ services:
     container_name: ${var.db-container-name}
     restart: always
     volumes:
-      - ${var.home-directory}volumes/database:/var/lib/mysql
+      - ${var.home-directory}volumes/${var.db_volume}:/var/lib/mysql
       #this line needs to be executed just the first time. It is needed for making the users and databases.
       ${var.volume-initialize != "true"? "#": ""}- ${var.home-directory}database_init.sql:/docker-entrypoint-initdb.d/database_init.sql
     environment:
@@ -114,33 +115,29 @@ services:
     depends_on:
       - mariadb
 
-  # web:
-  #   image: ${var.apache-docker-image}
-  #   container_name: ${var.apache-container-name}
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #     - "8080:8080"
+  suitecrm:
+    image: ${var.crm-docker-image}
+    container_name: ${var.crm-container-name}
+    volumes:
+      - ${var.home-directory}volumes/${var.crm_volume}:/bitnami/suitecrm
+    environment:
+      ALLOW_EMPTY_PASSWORD: yes
+      ${var.volume-initialize != "true"? "#": ""}SUITECRM_USERNAME: ${var.crm-db-username}
+      ${var.volume-initialize != "true"? "#": ""}SUITECRM_PASSWORD: ${var.crm-db-password}
+      SUITECRM_DATABASE_USER: ${var.crm-db-username}
+      SUITECRM_DATABASE_PASSWORD: ${var.crm-db-password}
+      SUITECRM_DATABASE_NAME: ${var.crm-db-name}
+    networks:
+      - ${var.docker-network}
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    depends_on:
+      - mariadb
+      - james
 
 networks:
   ${var.docker-network}:
 
 EOF
 }
-
-
-
-# suitecrm:
-# image: ${var.crm-docker-image}
-# container_name: ${var.crm-container-name}
-# restart: always
-# environment:
-# DB_HOST: mysql
-# DB_USER: db_user
-# DB_PASSWORD: db_password
-# DB_NAME: suitecrm_db
-# networks:
-# - ${var.docker-network}
-# depends_on:
-# - mysql
-# - james

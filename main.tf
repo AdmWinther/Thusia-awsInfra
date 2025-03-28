@@ -29,7 +29,7 @@ variable "db-docker-image" {}
 variable "db_software" {}
 variable "db_root_password" {}
 variable "db_driver_className" {}
-variable "db-volume" {}
+variable "db_volume" {}
 
 #James Server related variables
 variable "james_db_name" {}
@@ -50,7 +50,7 @@ variable "crm-docker-image" {}
 variable "crm-db-name" {}
 variable "crm-db-username" {}
 variable "crm-db-password" {}
-variable "crm-volume-name" {}
+variable "crm_volume" {}
 
 
 #AWS-EC2 related variables
@@ -74,6 +74,7 @@ module "file_gen_docker_compose_yml" {
   db-docker-image       = var.db-docker-image
   db_root_password      = var.db_root_password
   db_driver_className   = var.db_driver_className
+  db_volume             = var.db_volume
 
 
   james-container-name  = var.james-container-name
@@ -91,7 +92,7 @@ module "file_gen_docker_compose_yml" {
   crm-db-name           = var.crm-db-name
   crm-db-username       = var.crm-db-username
   crm-db-password       = var.crm-db-password
-  crm-volume-name       = var.crm-volume-name
+  crm_volume            = var.crm_volume
 
   volume-initialize     = var.volume-initialize
 }
@@ -198,9 +199,11 @@ resource "aws_instance" "my_instance" {
                 sudo mount /dev/xvdd /home/ec2-user/volumes/
 
                 #create a folder in the volume for the database, only if the variable "volume-initialize" is set to true
-                if [ "${var.volume-initialize}" == "true" ]; then
-                  sudo mkdir ${var.home-directory}volumes/database/
-                fi
+                #It is not needed to create the folders. Docker make the folders if they do not exist.
+                # if [ "${var.volume-initialize}" == "true" ]; then
+                #   sudo mkdir ${var.home-directory}volumes/database/
+                #   sudo mkdir ${var.home-directory}volumes/suitecrm/
+                # fi
 
 
                 #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.

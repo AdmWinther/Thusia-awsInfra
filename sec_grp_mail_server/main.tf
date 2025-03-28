@@ -58,10 +58,10 @@ resource "aws_security_group" "mail_server" {
 
   # HTTP (for REST APIs) :
   # HTTP - default port for HTTP services, including REST
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # ingress {
+  #   from_port   = 8080
+  #   to_port     = 8080
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
 }

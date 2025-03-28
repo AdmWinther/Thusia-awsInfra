@@ -26,12 +26,18 @@ resource "aws_security_group" "http_https_ssh" {
 
     # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8081
   ingress {
-    from_port   = 8081
-    to_port     = 8081
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   #allow HTTPS
   ingress {
