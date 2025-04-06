@@ -3,8 +3,8 @@ variable "my_vpc_id" {
   type        = string
 }
 
-resource "aws_security_group" "http_https_ssh" {
-  name        = "http-https-ssh-sg"
+resource "aws_security_group" "http_https_ssh_database" {
+  name        = "http_https_ssh_database_sg"
   description = "Allow SSH and HTTP and HTTPS traffic"
   vpc_id      = var.my_vpc_id # Replace with your VPC ID
 
@@ -51,6 +51,14 @@ resource "aws_security_group" "http_https_ssh" {
   ingress {
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  #allow Mariadb port
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

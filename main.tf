@@ -51,7 +51,13 @@ variable "crm-db-name" {}
 variable "crm-db-username" {}
 variable "crm-db-password" {}
 variable "crm_volume" {}
+variable "crm_user_username" {}
+variable "crm_user_password" {}
 
+#Rest-API related variables
+variable "rest_api_db_name" {}
+variable "rest_api_db_username" {}
+variable "rest_api_db_password" {}
 
 #AWS-EC2 related variables
 variable "ec2-ami" {}
@@ -62,7 +68,7 @@ variable "volume-initialize" {}
 variable "volume-id" {}
 
 
-#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_docker_compose_yml" {
   source                = "./file_gen_docker_compose_yml"
 
@@ -93,6 +99,12 @@ module "file_gen_docker_compose_yml" {
   crm-db-username       = var.crm-db-username
   crm-db-password       = var.crm-db-password
   crm_volume            = var.crm_volume
+  crm_user_username     = var.crm_user_username
+  crm_user_password     = var.crm_user_password
+
+  rest_api_db_name           = var.rest_api_db_name
+  rest_api_db_username       = var.rest_api_db_username
+  rest_api_db_password       = var.rest_api_db_password
 
   volume-initialize     = var.volume-initialize
 }
@@ -100,8 +112,8 @@ module "file_gen_docker_compose_yml" {
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Security Grp.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 # Create a security group to allow SSH, HTTP and HTTPS traffic
-module "sec_grp_http_https_ssh" {
-  source    = "./sec_grp_http_https_ssh"
+module "sec_grp_http_https_ssh_database" {
+  source    = "./sec_grp_http_https_ssh_database"
   my_vpc_id = var.my_vpc_id
 }
 module "sec_grp_mail_server" {
@@ -133,7 +145,7 @@ resource "aws_instance" "my_instance" {
   # iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
   iam_instance_profile = module.profile_gen_EC2_full_Access_to_S3.ec2_full_access_to_s3_bucket_profile_name
   # Associate the security group with the EC2 instance
-  security_groups = [module.sec_grp_http_https_ssh.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
+  security_groups = [module.sec_grp_http_https_ssh_database.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
   key_name        = "AccessKey"
 
   # Copy some files into the EC2
@@ -223,7 +235,7 @@ resource "aws_instance" "my_instance" {
                 # cp ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar ${var.docker-network}jdbc-driver.jar
                 # cp ${var.home-directory}bucket/james-keystore/keystore ${var.docker-network}keystore
 
-                # docker-compose -f ${var.home-directory}compose.yml up -d
+                docker-compose -f ${var.home-directory}compose.yml up -d
               EOF
 }
 

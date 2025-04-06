@@ -30,6 +30,13 @@ variable "crm-db-name" {}
 variable "crm-db-username" {}
 variable "crm-db-password" {}
 variable "crm_volume" {}
+variable "crm_user_username" {}
+variable "crm_user_password" {}
+
+#Rest-API related variables
+variable "rest_api_db_name" {}
+variable "rest_api_db_username" {}
+variable "rest_api_db_password" {}
 
 #EBC volume related variables
 variable "volume-initialize" {}
@@ -47,13 +54,19 @@ module "file_gen_james_database_properties" {
 
 
 module "file_gen_database_init" {
-source = "../file_gen_database_init"
-james_db_name = var.james_db_name
-james_db_username = var.james_db_username
-james_db_password = var.james_db_password
-crm_db_name   = var.crm-db-name
-crm_db_username   = var.crm-db-username
-crm_db_password   = var.crm-db-password
+  source = "../file_gen_database_init"
+  james_db_name = var.james_db_name
+  james_db_username = var.james_db_username
+  james_db_password = var.james_db_password
+
+  crm_db_name   = var.crm-db-name
+  crm_db_username   = var.crm-db-username
+  crm_db_password   = var.crm-db-password
+
+
+  rest_api_db_name   = var.rest_api_db_name
+  rest_api_db_username   = var.rest_api_db_username
+  rest_api_db_password   = var.rest_api_db_password
 }
 
 
@@ -78,6 +91,8 @@ services:
       - ${var.home-directory}volumes/${var.db_volume}:/var/lib/mysql
       #this line needs to be executed just the first time. It is needed for making the users and databases.
       ${var.volume-initialize != "true"? "#": ""}- ${var.home-directory}database_init.sql:/docker-entrypoint-initdb.d/database_init.sql
+    ports:
+      - "3306:3306"
     environment:
       ALLOW_EMPTY_PASSWORD: yes
       MARIADB_ROOT_PASSWORD: ${var.db_root_password}
@@ -108,6 +123,7 @@ services:
       - "465:465"
       - "587:587"
       - "993:993"
+      #Port 8000 is used for the REST API of James
       - "8000:8000"
 
     networks:
@@ -122,15 +138,15 @@ services:
       - ${var.home-directory}volumes/${var.crm_volume}:/bitnami/suitecrm
     environment:
       ALLOW_EMPTY_PASSWORD: yes
-      ${var.volume-initialize != "true"? "#": ""}SUITECRM_USERNAME: ${var.crm-db-username}
-      ${var.volume-initialize != "true"? "#": ""}SUITECRM_PASSWORD: ${var.crm-db-password}
+      ${var.volume-initialize != "true"? "#": ""}SUITECRM_USERNAME: ${var.crm_user_username}
+      ${var.volume-initialize != "true"? "#": ""}SUITECRM_PASSWORD: ${var.crm_user_password}
       SUITECRM_DATABASE_USER: ${var.crm-db-username}
       SUITECRM_DATABASE_PASSWORD: ${var.crm-db-password}
       SUITECRM_DATABASE_NAME: ${var.crm-db-name}
     networks:
       - ${var.docker-network}
     ports:
-      - "8080:8080"
+      - "8080:80"
       - "8443:8443"
     depends_on:
       - mariadb
