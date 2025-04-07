@@ -146,7 +146,7 @@ services:
     networks:
       - ${var.docker-network}
     ports:
-      - "8080:80"
+      - "80:80"
       - "8443:8443"
     depends_on:
       - mariadb
