@@ -174,6 +174,11 @@ resource "aws_instance" "my_instance" {
     destination = "/${var.home-directory}/database_init.sql"
   }
 
+  # provisioner "file" {
+  #   source      = "./Dockerfile"
+  #   destination = "/${var.home-directory}/Dockerfile"
+  # }
+
   connection {
     type        = "ssh"
     user        = "ec2-user"
@@ -230,10 +235,6 @@ resource "aws_instance" "my_instance" {
                 #Installing docker-compose
                 sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d'"' -f4)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
                 sudo chmod +x /usr/local/bin/docker-compose
-
-                sudo -s
-                # cp ${var.home-directory}bucket/jdbc-driver/${var.db_software}-jdbc-driver.jar ${var.docker-network}jdbc-driver.jar
-                # cp ${var.home-directory}bucket/james-keystore/keystore ${var.docker-network}keystore
 
                 docker-compose -f ${var.home-directory}compose.yml up -d
               EOF

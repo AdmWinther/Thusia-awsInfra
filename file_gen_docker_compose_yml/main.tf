@@ -69,6 +69,11 @@ module "file_gen_database_init" {
   rest_api_db_password   = var.rest_api_db_password
 }
 
+module "file_gen_suitecrm_docker_image" {
+  source = "../file_gen_suitecrm_docker_image"
+  crm-docker-image = var.crm-docker-image
+}
+
 
 
 module "file_gen_pg_hba_conf" {
@@ -146,7 +151,7 @@ services:
     networks:
       - ${var.docker-network}
     ports:
-      - "80:80"
+      - "8080:8080"
       - "8443:8443"
     depends_on:
       - mariadb

@@ -222,3 +222,32 @@ docker run --rm --name suitecrm \
 --network my-docker-network \
 --volume /home/ec2-user/vvv:/bitnami/suitecrm \
 bitnami/suitecrm:latest
+
+
+
+<h2>SuiteCRM API</h2>
+First thing first. According to https://community.suitecrm.com/t/rest-api-v8-for-bitnami-container-version/93238 I 
+need to follow the instruction in https://docs.suitecrm.com/developer/api/developer-setup-guide/json-api/#_generate_private_and_public_key_for_oauth2
+but with a difference, at the last step the user is deamon, not www-data. 
+So I exec bash on the suiteCRM container, navigated to ```/opt/bitnami/suitecrm``` and run the following command:
+```
+composer install
+```
+Then navigate to ```/bitnami/suitecrm/public/legacy/Api/V8/OAuth2``` and generate a private key:
+```
+openssl genrsa -out private.key 2048
+```
+Then to Generate a public key:
+```
+openssl rsa -in private.key -pubout -out public.key
+```
+The permission of the key files must be 600 or 660, so change it.
+```
+chmod 600 private.key public.key
+```
+Then executed:
+```
+chown daemon:daemon p*.key
+```
+Next step is to make a credentials in SuiteCRM. 
+```
