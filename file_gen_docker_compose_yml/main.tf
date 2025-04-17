@@ -69,9 +69,8 @@ module "file_gen_database_init" {
   rest_api_db_password   = var.rest_api_db_password
 }
 
-module "file_gen_suitecrm_docker_image" {
-  source = "../file_gen_suitecrm_docker_image"
-  crm-docker-image = var.crm-docker-image
+module "file_gen_suitecrm_setup_commands" {
+  source = "../file_gen_suitecrm_setup_commands"
 }
 
 

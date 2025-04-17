@@ -241,7 +241,7 @@ Then to Generate a public key:
 ```
 openssl rsa -in private.key -pubout -out public.key
 ```
-The permission of the key files must be 600 or 660, so change it.
+The permission of the key files must be 600, so change it.
 ```
 chmod 600 private.key public.key
 ```
@@ -249,5 +249,8 @@ Then executed:
 ```
 chown daemon:daemon p*.key
 ```
-Next step is to make a credentials in SuiteCRM. 
+Next step is to make a credentials in SuiteCRM. In the browser, navigate to http://{{ip}}:8080 and login with admin/admin
+Then go to Admin Panel > OAuth2 Clients and Tokens. From the top menu, under "OAuth2 Clients", click "Create" click on 
+"+ New Client Credentials client" and fill the form, and make sure you choose some password in the field "Secret".
+Then click "Save" and you will see the client id next page. Save them ID and secret, we need that for using APIs.
 ```

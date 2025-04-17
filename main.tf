@@ -174,11 +174,6 @@ resource "aws_instance" "my_instance" {
     destination = "/${var.home-directory}/database_init.sql"
   }
 
-  # provisioner "file" {
-  #   source      = "./Dockerfile"
-  #   destination = "/${var.home-directory}/Dockerfile"
-  # }
-
   connection {
     type        = "ssh"
     user        = "ec2-user"
@@ -237,6 +232,19 @@ resource "aws_instance" "my_instance" {
                 sudo chmod +x /usr/local/bin/docker-compose
 
                 docker-compose -f ${var.home-directory}compose.yml up -d
+
+                #Inform the user that you are waiting for the containers to be up and running
+                echo "Waiting for the containers to be up and running..."
+                sudo mkdir ${var.home-directory}d01_wait_90_sec/
+                # Wait for 90 seconds before running the commands in CRM container.
+                sleep 90
+                echo "Containers are up and running. end of 90 seconds."
+
+                sudo cp ${var.home-directory}bucket/commands.sh ${var.home-directory}
+                chmod +x ${var.home-directory}commands.sh
+                echo "Running the commands in the CRM container..."
+                sudo bash ${var.home-directory}commands.sh
+                echo "Commands in the CRM container are done."
               EOF
 }
 
