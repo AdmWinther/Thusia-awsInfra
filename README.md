@@ -229,11 +229,11 @@ bitnami/suitecrm:latest
 First thing first. According to https://community.suitecrm.com/t/rest-api-v8-for-bitnami-container-version/93238 I 
 need to follow the instruction in https://docs.suitecrm.com/developer/api/developer-setup-guide/json-api/#_generate_private_and_public_key_for_oauth2
 but with a difference, at the last step the user is daemon, not www-data. 
-So I exec bash on the suiteCRM container, navigated to ```/opt/bitnami/suitecrm``` and run the following command:
+So I exec bash on the suiteCRM container, navigated to `/opt/bitnami/suitecrm` and run the following command:
 ```
 composer install
 ```
-Then navigate to ```/bitnami/suitecrm/public/legacy/Api/V8/OAuth2``` and generate a private key:
+Then navigate to `/bitnami/suitecrm/public/legacy/Api/V8/OAuth2` and generate a private key:
 ```
 openssl genrsa -out private.key 2048
 ```
