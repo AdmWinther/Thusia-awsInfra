@@ -59,13 +59,15 @@ these are the steps to make the keystore:
     run the postgresql and james containers in the terraform.tf file.
 
 <h3>2.2.2</h3>- Connect to the server with SSH and then run one simple apache/james:jpa-3.6.1 container.
-    ```docker run --rm --name james -it -d apache/james:jpa-3.6.1```
 
-    2.2.3- Switch to the bash of the container
+    ```docker run --rm --name james -it -d apache/james:jpa-3.6.1```
+2.2.3- Switch to the bash of the container
     ```docker exec -it james bash```
 
-2.2.4- Run the keytool command to create the keystore
-    ```keytool -genkey -alias james -keyalg RSA -keystore keystore```
+<h3>2.2.4</h3>- Run the keytool command to create the keystore 
+
+```keytool -genkey -alias james -keyalg RSA -keystore keystore```
+
 In this stage, the code will ask you for a password. The default is ```james72laBalle```
 You need to enter this password two times in the beginning. then you answer some silly questions and
 at the end yes or y. then you would see that a new file nemed "keystore" is created in the folder.
@@ -134,7 +136,10 @@ host all all all scram-sha-256
 ```
 
 <h2>2.5</h2>
-file ``` database_init.sql``` is the file that is used to initialize the database. The file should have the following content:
+file
+
+    ```database_init.sql```    
+is the file that is used to initialize the database. The file should have the following content:
 
 ```
 CREATE DATABASE ${var.james_db_name};
@@ -151,6 +156,7 @@ GRANT ALL PRIVILEGES ON ${var.crm_db_name}.* TO '${var.crm_db_username}'@'%';
 To store the database data you need to create a volume in AWS EBS. The volume should be at least 10GB.
 #First make an EBC volume in AWS console/EC2/volume, get the volume id and attach it to the instance.
 #The Terraform code already attach the EBC volume to the instance. you just need to replace the volume-id in the code.
+
 ```
 Volume will be mounted at /dev/xvdd
 ```
@@ -158,7 +164,6 @@ Volume will be mounted at /dev/xvdd
 ```
 sudo mkfs -t ext4 /dev/xvdd
 ```
-
 #Then create a directory to mount the volume: Run EC2. Terraform must already mount the EBC in /var/lib/docker/volume/
 ```
 sudo mount /dev/xvdd /home/ec2-user/volumes
@@ -185,6 +190,7 @@ docker run --rm --name mariadb -v /home/ec2-user/volumes/database:/var/lib/mysql
 ```
 
 <h2>James</h2>
+
 ```
 docker run --rm --name james -v /home/ec2-user/james-database.properties:/root/conf/james-database.properties -v /home/ec2-user/jdbc.jar:/root/libs/jdbc.jar -v /home/ec2-user/keystore:/root/conf/keystore -p25:25 -p110:110 -p143:143 -p465:465 -p587:587 -p993:993 -p8000:8000 --network my-docker-network -d apache/james:jpa-3.8.2
 ```
@@ -229,7 +235,8 @@ bitnami/suitecrm:latest
 First thing first. According to https://community.suitecrm.com/t/rest-api-v8-for-bitnami-container-version/93238 I 
 need to follow the instruction in https://docs.suitecrm.com/developer/api/developer-setup-guide/json-api/#_generate_private_and_public_key_for_oauth2
 but with a difference, at the last step the user is daemon, not www-data. 
-So I exec bash on the suiteCRM container, navigated to `/opt/bitnami/suitecrm` and run the following command:
+So I exec bash on the suiteCRM container, navigated to /opt/bitnami/suitecrm and run the following command:
+
 ```
 composer install
 ```
