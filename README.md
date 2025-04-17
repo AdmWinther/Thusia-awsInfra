@@ -46,7 +46,7 @@ database.username=DB_USERNAME
 database.password=DB_PASSWORD
 ```
 
-Since we make a docker network and all of the containers are in the same network, we do not need to add prot at
+Since we make a docker network and all the containers are in the same network, we do not need to add prot at
 the end of the server address, otherwise we need that.
 
 <h2>2.2</h2>- You need to create a keystore file. At the moment I do not know what keystore file is used for.
@@ -67,7 +67,7 @@ these are the steps to make the keystore:
 2.2.4- Run the keytool command to create the keystore
     ```keytool -genkey -alias james -keyalg RSA -keystore keystore```
 In this stage, the code will ask you for a password. The default is ```james72laBalle```
-You need to enter this password two times in the beginning. then you answere some silly questions and
+You need to enter this password two times in the beginning. then you answer some silly questions and
 at the end yes or y. then you would see that a new file nemed "keystore" is created in the folder.
 
 2.2.5- Copy the keystore file from the container to your EC2 instance.
@@ -79,7 +79,7 @@ kill the running james container
 ```docker kill james```
 
 2.2.6- Now you have the keystore file. test the james container with the new keystore. This time
-you do not deattach from the container run to make sure you would see the james service run successfully.
+you do not disconnect (-d) from the container run to make sure you would see the james service run successfully.
 ```docker run --rm --name james -it -v /home/ec2-user/keystore:/root/conf/keystore apache/james:jpa-3.6.1```
 Now you should see a beautiful message that the james server is running.
 ```[INFO ] o.a.j.GuiceJamesServer - JAMES server started```
@@ -87,10 +87,10 @@ stop the server by ```ctrl+C```
 
 2.2.7- Now you have to take the keystore out of the EC2 and place it in the folder
 configfiles.zip/james/config_files/.
-we move the file first to S3 bucket and then download it from S3 on our maching.
+we move the file first to S3 bucket and then download it from S3 on our matching.
 Note: since we are using Amazon Linux, there is already aws-cli installed. otherwise you need
 to install aws-cli from yum or apt-get.
-Make a new role in AWS IAM and give it S3FullAccess permission. lets name it EC2_S3_Access. go back
+Make a new role in AWS IAM and give it S3FullAccess permission. let's name it EC2_S3_Access. go back
 to the Instance and select it, click actions and under security, click modify IAM role. In the new
 page, select the role you just made and click save. Now your EC2 has access to S3.
 
@@ -111,7 +111,7 @@ place it in the folder configfiles.zip/james/postgres_driver/
 
 
 <h2>2.4</h2> The database password and name you set in james-database.properties as db_password, db_name
-must be also set equally in the terraform.tfvar file as db_password, and db_name respectively)
+must be also set equally in "terraform.tfvar" file as db_password, and db_name respectively.
 
 
 This is the content of your pg_hba.conf
@@ -149,12 +149,12 @@ GRANT ALL PRIVILEGES ON ${var.crm_db_name}.* TO '${var.crm_db_username}'@'%';
 
 <h2>2.6</h2>
 To store the database data you need to create a volume in AWS EBS. The volume should be at least 10GB.
-#First make a EBC volume in AWS console/EC2/volume, get the volume id and attach it to the instance.
-#The Terraform code already attach the EBC volume to the instance. you just need to replace the vollume-id in the code.
+#First make an EBC volume in AWS console/EC2/volume, get the volume id and attach it to the instance.
+#The Terraform code already attach the EBC volume to the instance. you just need to replace the volume-id in the code.
 ```
 Volume will be mounted at /dev/xvdd
 ```
-#If the volume is new, you need to fomat it. This is needed for the first time after creating the volume.
+#If the volume is new, you need to format it. This is needed for the first time after creating the volume.
 ```
 sudo mkfs -t ext4 /dev/xvdd
 ```
@@ -195,7 +195,7 @@ Running SuiteCRM is very simple. You just need to run the following command:
 
 
 
-The database for CRM must be built seprately.
+The database for CRM must be built separately.
 ```
 docker run --rm --name mariadb -e ALLOW_EMPTY_PASSWORD=yes -e MARIADB_ROOT_PASSWORD=rootsecret -e MARIADB_USER=crmdb -e MARIADB_PASSWORD=rootsecret -e MARIADB_DATABASE=crmdb --network my-docker-network -v /home/ec2-user/volumes/suite_crm:/var/lib/mysql mariadb:10.6
 ```
@@ -228,7 +228,7 @@ bitnami/suitecrm:latest
 <h2>SuiteCRM API</h2>
 First thing first. According to https://community.suitecrm.com/t/rest-api-v8-for-bitnami-container-version/93238 I 
 need to follow the instruction in https://docs.suitecrm.com/developer/api/developer-setup-guide/json-api/#_generate_private_and_public_key_for_oauth2
-but with a difference, at the last step the user is deamon, not www-data. 
+but with a difference, at the last step the user is daemon, not www-data. 
 So I exec bash on the suiteCRM container, navigated to ```/opt/bitnami/suitecrm``` and run the following command:
 ```
 composer install
@@ -253,4 +253,3 @@ Next step is to make a credentials in SuiteCRM. In the browser, navigate to http
 Then go to Admin Panel > OAuth2 Clients and Tokens. From the top menu, under "OAuth2 Clients", click "Create" click on 
 "+ New Client Credentials client" and fill the form, and make sure you choose some password in the field "Secret".
 Then click "Save" and you will see the client id next page. Save them ID and secret, we need that for using APIs.
-```
