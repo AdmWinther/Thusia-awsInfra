@@ -142,8 +142,7 @@ module "profile_gen_EC2_full_Access_to_S3" {
 #______________________________        EC2          _____________________________
 resource "aws_instance" "my_instance" {
   ami           = var.ec2-ami
-  instance_type = "t2.large"
-  #small
+  instance_type = "t2.small"
 
   availability_zone = local.availability_zone
 

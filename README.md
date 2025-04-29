@@ -1,4 +1,4 @@
-This file is made by Adam Winther.
+gitThis file is made by Adam Winther.
 This is a guide on how to run the server and how to set up the server.
 The server is made to run on AWS and is made with terraform.
 The server is made of an AWS EC2 instance that runs a Postgres database and Apache/James Docker container.
@@ -321,7 +321,9 @@ then the server responded:
 ```
 250 2.6.0 Message received
 ```
-
+<h3>Turning on the authentication</h3>
+Followed the comments on git page: https://github.com/apache/james-project/blob/master/server/apps/spring-app/src/main/resources/smtpserver.xml
+disconnecting all of the ports, and only letting port 25 to be open.
 
 
 ```
