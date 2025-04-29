@@ -260,3 +260,78 @@ Next step is to make a credentials in SuiteCRM. In the browser, navigate to http
 Then go to Admin Panel > OAuth2 Clients and Tokens. From the top menu, under "OAuth2 Clients", click "Create" click on 
 "+ New Client Credentials client" and fill the form, and make sure you choose some password in the field "Secret".
 Then click "Save" and you will see the client id next page. Save them ID and secret, we need that for using APIs.
+
+
+<h2>Telnet to James</h2>
+I could successfully telnet to James, I ran another EC2 and installed telnet on it and then:
+```
+telnet mail.awin.dk 587
+```
+If you make the connection successfully, the response to this command would be:
+```
+Trying 54.84.219.48...
+Connected to mail.awin.dk.
+Escape character is '^]'.
+220 Apache JAMES awesome SMTP Server
+```
+Then I identified myself as adam;
+```
+HELO adam
+```
+And the server confirmed my connection being successful by replying;
+```
+250 947c5b429b27 Hello adam [54.227.41.25])
+```
+Now I will mention from which mailbox I want to send an email:
+```
+MAIL FROM:<awin@awin.dk>
+```
+Please pay attention to the format of the command. The command and spaces must be exactly as specified.
+And as a result the server responded with code 250 which shows success. Please note that in this pint the server will not control if the mailbox is valid, so even if you enter an invalid mailbox, you still get code 250.
+```
+250 2.1.0 Sender <awin@awin.dk> OK
+```
+Now I should mention the receiver mailbox:
+```
+RCPT TO:<jpo@awin.dk>
+```
+and therefore the server response will be;
+```
+250 2.1.5 Recipient <jpo@awin.dk> OK
+```
+Now I will tell the server that I am going to enter the mail itself:
+So I enter:
+```
+DATA
+```
+And the server responded:
+```
+354 Ok Send data ending with <CRLF>.<CRLF>
+```
+Finally time to enter the mail body:
+```
+Subject: this is a very important moment
+This is the moment that I sent the first email from my own mail server.
+```
+then I ended the body with a single period and enter;
+```
+.
+```
+then the server responded:
+```
+250 2.6.0 Message received
+```
+
+
+
+```
+```
+```
+```
+```
+```
+```
+```
+```
+
+

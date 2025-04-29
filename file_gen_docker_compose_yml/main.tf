@@ -33,13 +33,20 @@ variable "crm_volume" {}
 variable "crm_user_username" {}
 variable "crm_user_password" {}
 
+
+#Nginx related variables
+variable "nginx-image" {}
+variable "nginx-container-name" {}
+
 #Rest-API related variables
 variable "rest_api_db_name" {}
 variable "rest_api_db_username" {}
 variable "rest_api_db_password" {}
 
 #EBC volume related variables
-variable "volume-initialize" {}
+variable "volume-initialize" {
+  type = bool
+}
 
 module "file_gen_james_database_properties" {
   source = "../file_gen_james_database_properties"
@@ -69,14 +76,20 @@ module "file_gen_database_init" {
   rest_api_db_password   = var.rest_api_db_password
 }
 
+module "file_gen_nginx_conf" {
+  source = "../file_gen_nginx_conf"
+}
+
 module "file_gen_suitecrm_setup_commands" {
   source = "../file_gen_suitecrm_setup_commands"
 }
 
-
-
 module "file_gen_pg_hba_conf" {
   source = "../file_gen_pg_hba_conf"
+}
+
+module "file_get_etc_hosts" {
+  source = "../file_gen_etc_hosts"
 }
 
 resource "local_file" "docker_compose_yml" {
@@ -94,7 +107,7 @@ services:
     volumes:
       - ${var.home-directory}volumes/${var.db_volume}:/var/lib/mysql
       #this line needs to be executed just the first time. It is needed for making the users and databases.
-      ${var.volume-initialize != "true"? "#": ""}- ${var.home-directory}database_init.sql:/docker-entrypoint-initdb.d/database_init.sql
+      ${!var.volume-initialize? "#": ""}- ${var.home-directory}database_init.sql:/docker-entrypoint-initdb.d/database_init.sql
     ports:
       - "3306:3306"
     environment:
@@ -142,8 +155,8 @@ services:
       - ${var.home-directory}volumes/${var.crm_volume}:/bitnami/suitecrm
     environment:
       ALLOW_EMPTY_PASSWORD: yes
-      ${var.volume-initialize != "true"? "#": ""}SUITECRM_USERNAME: ${var.crm_user_username}
-      ${var.volume-initialize != "true"? "#": ""}SUITECRM_PASSWORD: ${var.crm_user_password}
+      ${!var.volume-initialize ? "#": ""}SUITECRM_USERNAME: ${var.crm_user_username}
+      ${!var.volume-initialize ? "#": ""}SUITECRM_PASSWORD: ${var.crm_user_password}
       SUITECRM_DATABASE_USER: ${var.crm-db-username}
       SUITECRM_DATABASE_PASSWORD: ${var.crm-db-password}
       SUITECRM_DATABASE_NAME: ${var.crm-db-name}
@@ -155,6 +168,15 @@ services:
     depends_on:
       - mariadb
       - james
+
+  ngx:
+    image: ${var.nginx-image}
+    container_name: ${var.nginx-container-name}
+    volumes:
+      - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
+    network_mode: host
+    depends_on:
+      - suitecrm
 
 networks:
   ${var.docker-network}:

@@ -54,6 +54,11 @@ variable "crm_volume" {}
 variable "crm_user_username" {}
 variable "crm_user_password" {}
 
+
+#Nginx related variables
+variable "nginx-image" {}
+variable "nginx-container-name" {}
+
 #Rest-API related variables
 variable "rest_api_db_name" {}
 variable "rest_api_db_username" {}
@@ -64,9 +69,14 @@ variable "ec2-ami" {}
 variable "home-directory" {}
 
 #EBC volume related variables
-variable "volume-initialize" {}
+variable "volume-initialize" {
+  type = bool
+}
 variable "volume-id" {}
 
+
+#DNS related variables
+variable "domain_name" {}
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_docker_compose_yml" {
@@ -102,6 +112,9 @@ module "file_gen_docker_compose_yml" {
   crm_user_username     = var.crm_user_username
   crm_user_password     = var.crm_user_password
 
+  nginx-image = var.nginx-image
+  nginx-container-name = var.nginx-container-name
+
   rest_api_db_name           = var.rest_api_db_name
   rest_api_db_username       = var.rest_api_db_username
   rest_api_db_password       = var.rest_api_db_password
@@ -121,24 +134,16 @@ module "sec_grp_mail_server" {
   my_vpc_id = var.my_vpc_id
 }
 
-
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXX Role, Policy, Profile  XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "profile_gen_EC2_full_Access_to_S3" {
   source = "./profile_gen_EC2FullAccessToS3Bucket"
 }
 
-
 #______________________________        EC2          _____________________________
-data "aws_ebs_volume" "thusia_volume" {
-  filter {
-    name   = "volume-id"
-    values = [var.volume-id]  # Replace with your existing EBS volume ID
-  }
-}
-
 resource "aws_instance" "my_instance" {
   ami           = var.ec2-ami
-  instance_type = "t2.small"
+  instance_type = "t2.large"
+  #small
 
   availability_zone = local.availability_zone
 
@@ -174,6 +179,16 @@ resource "aws_instance" "my_instance" {
     destination = "/${var.home-directory}/database_init.sql"
   }
 
+  provisioner "file" {
+    source      = "./nginx.conf"
+    destination = "/${var.home-directory}/nginx.conf"
+  }
+
+  provisioner "file" {
+    source      = "./hosts"
+    destination = "/${var.home-directory}/hosts"
+  }
+
   connection {
     type        = "ssh"
     user        = "ec2-user"
@@ -187,6 +202,7 @@ resource "aws_instance" "my_instance" {
 
   user_data = <<-EOF
                 #!/bin/bash
+                set -x
                 sudo ${var.package-installer} update -y
 
 
@@ -195,6 +211,16 @@ resource "aws_instance" "my_instance" {
                 sudo wget -P ${var.home-directory}mount-install-source/ https://s3.amazonaws.com/mountpoint-s3-release/latest/x86_64/mount-s3.rpm
                 sudo ${var.package-installer} install -y ${var.home-directory}mount-install-source/mount-s3.rpm
 
+                #Installing and starting docker
+                sudo ${var.package-installer} install -y docker
+                sudo service docker start
+                sudo usermod -a -G docker ec2-user
+                sudo docker network create ${var.docker-network}
+
+                #Installing docker-compose
+                sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d'"' -f4)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
+
                 # mount the bucket
                 sudo mkdir ${var.home-directory}bucket/
                 sudo mount-s3 ${var.james_s3_bucket_name} ${var.home-directory}bucket/
@@ -202,59 +228,69 @@ resource "aws_instance" "my_instance" {
                 #Make a directory to mount all of the volumes in it.
                 sudo mkdir ${var.home-directory}volumes/
 
+                # Wait for the device to be available
+                while [ ! -e /dev/xvdf ]; do
+                  echo "Waiting for /dev/xvdf to be available..."
+                  sleep 5
+                done
+
                 #format the attached EBS volume only if variable "volume-initialize" is set to true
-                if [ "${var.volume-initialize}" == "true" ]; then
-                  sudo mkfs -t ext4 /dev/xvdd
-                fi
+                ${!var.volume-initialize ? "#": ""} sudo mkfs -t ext4 /dev/xvdf
 
                 # mount the EBS volume into the EC2
-                sudo mount /dev/xvdd /home/ec2-user/volumes/
+                sudo mount /dev/xvdf ${var.home-directory}volumes/
 
-                #create a folder in the volume for the database, only if the variable "volume-initialize" is set to true
-                #It is not needed to create the folders. Docker make the folders if they do not exist.
-                # if [ "${var.volume-initialize}" == "true" ]; then
-                #   sudo mkdir ${var.home-directory}volumes/database/
-                #   sudo mkdir ${var.home-directory}volumes/suitecrm/
-                # fi
+                #Copy the file hosts to /etc/hosts. This requires SUDO access therefore could not be done via provisioning.
+                sudo cp ${var.home-directory}hosts /etc/hosts
 
+
+                #It is not a must to create the folders for mouting into container. Docker make the folders if they do not exist.
+                #BUT To avoid an error, first one should make the folder for database persistant data before give the ownership to mysql.
+                #This musr run only if it is the initialize mode: only if the variable "volume-initialize" is set to true
+                ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.db_volume}/
+                ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
 
                 #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
-                sudo chown -R 999:999 /var/lib/docker/volumes/database
+                sudo chown -R 999:999 ${var.home-directory}volumes/${var.db_volume}/
 
-                #Installing and starting docker
-                sudo ${var.package-installer} install -y docker
-                sudo service docker start
-                sudo usermod -a -G docker ubuntu
-                sudo docker network create ${var.docker-network}
-
-                #Installing docker-compose
-                sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d'"' -f4)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-                sudo chmod +x /usr/local/bin/docker-compose
-
+                #Run the containers
+                #It is important to run this command with (-d) to detach, otherwise the rest of the commands will not execute.
                 docker-compose -f ${var.home-directory}compose.yml up -d
 
                 #Inform the user that you are waiting for the containers to be up and running
-                echo "Waiting for the containers to be up and running..."
-                sudo mkdir ${var.home-directory}d01_wait_90_sec/
-                # Wait for 90 seconds before running the commands in CRM container.
-                sleep 90
-                echo "Containers are up and running. end of 90 seconds."
+                #The following commands will be executed only if the server is being initialized.
+                ${!var.volume-initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
+                ${!var.volume-initialize ? "#": ""}sudo mkdir ${var.home-directory}d01_wait_90_sec/
+                ${!var.volume-initialize ? "#": ""}# Wait for 90 seconds before running the commands in CRM container.
+                ${!var.volume-initialize ? "#": ""}sleep 90
+                ${!var.volume-initialize ? "#": ""}echo "Containers are up and running. end of 90 seconds."
 
-                sudo cp ${var.home-directory}bucket/commands.sh ${var.home-directory}
-                chmod +x ${var.home-directory}commands.sh
-                echo "Running the commands in the CRM container..."
-                sudo bash ${var.home-directory}commands.sh
+                ${!var.volume-initialize ? "#": ""}sudo cp ${var.home-directory}bucket/commands.sh ${var.home-directory}
+                ${!var.volume-initialize ? "#": ""}chmod +x ${var.home-directory}commands.sh
+                ${!var.volume-initialize ? "#": ""}echo "Running the commands in the CRM container..."
+                ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}commands.sh
+
                 echo "Commands in the CRM container are done."
               EOF
 }
 
-resource "aws_volume_attachment" "attach_volume_to_ec2" {
+resource "aws_volume_attachment" "Thusia_data" {
+  device_name = "/dev/sdf"  # The device name you want to use (e.g., /dev/sdf)
+  volume_id   = var.volume-id  # Replace with your EBS volume ID
   instance_id = aws_instance.my_instance.id
-  volume_id   = data.aws_ebs_volume.thusia_volume.id
-  device_name = "/dev/xvdd"  # The device name to expose to the instance
 
+  # Ensure that the attachment waits for the instance to be ready.
+  depends_on = [aws_instance.my_instance]
 }
 
 output "ssh_connection_string" {
-  value = "ssh -i ${"AccessKey.pem"} ec2-user@${aws_instance.my_instance.public_ip}"
+  value = "ssh -i ${"AccessKey.pem"} ec2-user@${aws_instance.my_instance.public_dns}"
+}
+
+output "server_ip" {
+  value = aws_instance.my_instance.public_ip
+}
+
+output "server_domain" {
+  value = aws_instance.my_instance.public_dns
 }
