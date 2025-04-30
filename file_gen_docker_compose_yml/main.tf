@@ -121,6 +121,7 @@ services:
     container_name: ${var.james-container-name}
     restart: always
     volumes:
+      - ${var.home-directory}smtpserver_final.xml:/root/conf/smtpserver.xml
       - type: bind
         source: ${var.home-directory}james-database.properties
         target: /root/conf/james-database.properties

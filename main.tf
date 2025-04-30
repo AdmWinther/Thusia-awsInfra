@@ -188,6 +188,11 @@ resource "aws_instance" "my_instance" {
     destination = "/${var.home-directory}/hosts"
   }
 
+  provisioner "file" {
+    source      = "./smtpserver_final.xml"
+    destination = "/${var.home-directory}smtpserver_final.xml"
+  }
+
   connection {
     type        = "ssh"
     user        = "ec2-user"
@@ -269,7 +274,7 @@ resource "aws_instance" "my_instance" {
                 ${!var.volume-initialize ? "#": ""}echo "Running the commands in the CRM container..."
                 ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}commands.sh
 
-                echo "Commands in the CRM container are done."
+                echo "Thusia server setup cmpleted."
               EOF
 }
 
