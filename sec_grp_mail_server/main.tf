@@ -48,7 +48,7 @@ resource "aws_security_group" "mail_server" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  # POP3 - POP3 over SSL/TLS
+  # POP3 - POP3 over SSL/TLS-AWS blockes
   ingress {
     from_port   = 995
     to_port     = 995

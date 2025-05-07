@@ -324,8 +324,14 @@ then the server responded:
 <h3>Turning on the authentication</h3>
 Followed the comments on git page: https://github.com/apache/james-project/blob/master/server/apps/spring-app/src/main/resources/smtpserver.xml
 disconnecting all of the ports, and only letting port 25 to be open.
-
-
+Use 
+```
+auth login
+```
+to login. then it asks you for userneme and password. enter followings respectively.
+```
+YXdpbkBhd2luLmRr
+YXdpbg==
 ```
 ```
 ```

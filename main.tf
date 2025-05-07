@@ -189,7 +189,7 @@ resource "aws_instance" "my_instance" {
   }
 
   provisioner "file" {
-    source      = "./smtpserver_final.xml"
+    source      = "./smtpserver_added25.xml"
     destination = "/${var.home-directory}smtpserver_final.xml"
   }
 
