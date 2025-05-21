@@ -16,3 +16,7 @@
 *.pem
 *.ppk
 keystore
+keystore_ca
+*certificate*
+*credential*
+*.crt

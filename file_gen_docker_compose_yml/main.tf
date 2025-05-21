@@ -1,5 +1,5 @@
 variable "home-directory" {}
-
+variable "domain_name" {}
 #Docker related variables
 variable "docker-network" {}
 
@@ -80,16 +80,32 @@ module "file_gen_nginx_conf" {
   source = "../file_gen_nginx_conf"
 }
 
-module "file_gen_suitecrm_setup_commands" {
-  source = "../file_gen_suitecrm_setup_commands"
+module "file_gen_crm_initialize_sh" {
+  source = "../file_gen_crm_initialize_sh"
+}
+
+module "file_gen_james_initialize_sh" {
+  source = "../file_gen_james_initialize_sh"
 }
 
 module "file_gen_pg_hba_conf" {
   source = "../file_gen_pg_hba_conf"
 }
 
-module "file_get_etc_hosts" {
+module "file_gen_etc_hosts" {
   source = "../file_gen_etc_hosts"
+}
+
+module "file_gen_imapserver_xml" {
+  source = "../file_gen_imapserver_xml"
+}
+
+module "file_gen_smtpserver_xml" {
+  source = "../file_gen_smtpserver_xml"
+}
+
+module "file_gen_mailetcontainer_xml" {
+  source = "../file_gen_james_mailetcontainer_xml"
 }
 
 resource "local_file" "docker_compose_yml" {
@@ -121,7 +137,8 @@ services:
     container_name: ${var.james-container-name}
     restart: always
     volumes:
-      - ${var.home-directory}smtpserver_final.xml:/root/conf/smtpserver.xml
+      - ${var.home-directory}smtpserver.xml:/root/conf/smtpserver.xml
+      - ${var.home-directory}imapserver.xml:/root/conf/imapserver.xml
       - type: bind
         source: ${var.home-directory}james-database.properties
         target: /root/conf/james-database.properties
@@ -131,7 +148,7 @@ services:
         target: /root/libs/jdbc.jar
 
       - type: bind
-        source: ${var.home-directory}keystore
+        source: ${var.home-directory}keystore_ca
         target: /root/conf/keystore
 
     ports:
@@ -153,11 +170,14 @@ services:
     image: ${var.crm-docker-image}
     container_name: ${var.crm-container-name}
     volumes:
+      - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/ssl/certs/crm.${var.domain_name}.crt
+      - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/ssl/certs/gd_bundle-g2-g1.crt
+      - ${var.home-directory}crm_https_ssl_private_key.key:/etc/ssl/private/crm.${var.domain_name}.key
       - ${var.home-directory}volumes/${var.crm_volume}:/bitnami/suitecrm
     environment:
-      ALLOW_EMPTY_PASSWORD: yes
-      ${!var.volume-initialize ? "#": ""}SUITECRM_USERNAME: ${var.crm_user_username}
-      ${!var.volume-initialize ? "#": ""}SUITECRM_PASSWORD: ${var.crm_user_password}
+      ALLOW_EMPTY_PASSWORD: no
+      ${var.volume-initialize ? "": "#"}SUITECRM_USERNAME: ${var.crm_user_username}
+      ${var.volume-initialize ? "": "#"}SUITECRM_PASSWORD: ${var.crm_user_password}
       SUITECRM_DATABASE_USER: ${var.crm-db-username}
       SUITECRM_DATABASE_PASSWORD: ${var.crm-db-password}
       SUITECRM_DATABASE_NAME: ${var.crm-db-name}
@@ -165,7 +185,6 @@ services:
       - ${var.docker-network}
     ports:
       - "8080:8080"
-      - "8443:8443"
     depends_on:
       - mariadb
       - james

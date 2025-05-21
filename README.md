@@ -333,13 +333,38 @@ to login. then it asks you for userneme and password. enter followings respectiv
 YXdpbkBhd2luLmRr
 YXdpbg==
 ```
+
+how check the IMAP:
+you need openssl. use the following command to connect to the server:
 ```
-```
-```
-```
-```
-```
-```
+openssl s_client -connect mail.awin.dk:143
 ```
 
+<h2>Activate TLS/SSL:</h2>
+For TSL/SSL following ports are recommended:
+SMTP SSL active 465
+SMTP STARTTLS active 587
+IMAP SSL active 993
+IMAP STARTTLS active 143
 
+I need to use a SSL certificate. I cannot use self signed SSL certificate any more. So I used this page:https://james.apache.org/server/config-ssl-tls.html
+First make a self signed certificate using the following command:
+```
+keytool -genkey -alias james -keyalg RSA -keystore keystore
+```
+The Keystore password is james72laBalle. The Keytool will ask some questions. it is important to set the Common Name (CN) to the domain name you are using. In my case, it is mail.awin.dk.
+Then we need to make a certificate request (CSR) file. To do this, run this command.
+```
+keytool -certreq -keyalg RSA -alias james -file certreq.csr -keystore keystore
+```
+This will generate the file certreq.csr. Then I need to use the CSR file to generate the SSL. I used ZeroSSL. ZeroSSL gives two files. ca_bundle.crt and certificate.crt. we need to load both into keystore.
+Use the following command to load the ca_bundle.crt file into keystore:(ca_bundle.crt is the file that shows how ZeroSSL is trusted)
+```
+keytool -import -alias root -keystore keystore -trustcacerts -file ca_certificate.crt
+```
+Then load the certificate.crt file into keystore. This is the file for our server.
+```
+keytool -import -alias james -keystore your_keystore_filename -trustcacerts -file your_certificate_filename
+```
+Now you have SSL certificate for your server. You can check the keystore file using OpenSSL.
+```

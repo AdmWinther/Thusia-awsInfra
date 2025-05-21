@@ -18,6 +18,13 @@ resource "aws_security_group" "mail_server" {
   }
   # SMTP - submission for email clients that will submit messages for delivery
   ingress {
+    from_port   = 465
+    to_port     = 465
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  # SMTP - submission for email clients that will submit messages for delivery
+  ingress {
     from_port   = 587
     to_port     = 587
     protocol    = "tcp"
@@ -32,7 +39,8 @@ resource "aws_security_group" "mail_server" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  # IMAP - IMAP over SSL/TLS
+
+  #IMAP - IMAP over SSL/TLS
   ingress {
     from_port   = 993
     to_port     = 993
@@ -42,19 +50,19 @@ resource "aws_security_group" "mail_server" {
 
   # POP3 (Post Office Protocol) :
   # POP3 - standard POP3 connections
-  ingress {
-    from_port   = 110
-    to_port     = 110
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # ingress {
+  #   from_port   = 110
+  #   to_port     = 110
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
   # POP3 - POP3 over SSL/TLS-AWS blockes
-  ingress {
-    from_port   = 995
-    to_port     = 995
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # ingress {
+  #   from_port   = 995
+  #   to_port     = 995
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
 
   # HTTP (for REST APIs) :
   # HTTP - default port for HTTP services, including REST

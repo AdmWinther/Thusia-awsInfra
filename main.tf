@@ -68,6 +68,9 @@ variable "rest_api_db_password" {}
 variable "ec2-ami" {}
 variable "home-directory" {}
 
+#Elastic ip association_id
+variable "eip_association_id" {}
+
 #EBC volume related variables
 variable "volume-initialize" {
   type = bool
@@ -78,12 +81,14 @@ variable "volume-id" {}
 #DNS related variables
 variable "domain_name" {}
 
+variable "thusia_admin_email_address" {}
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_docker_compose_yml" {
   source                = "./file_gen_docker_compose_yml"
 
   home-directory        = var.home-directory
   docker-network        = var.docker-network
+  domain_name           = var.domain_name
 
   db_software           = var.db_software
   db-container-name     = var.db-container-name
@@ -143,55 +148,9 @@ module "profile_gen_EC2_full_Access_to_S3" {
 resource "aws_instance" "my_instance" {
   ami           = var.ec2-ami
   instance_type = "t2.small"
-
+  #instance_type = "t2.micro"
   availability_zone = local.availability_zone
 
-  # iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
-  iam_instance_profile = module.profile_gen_EC2_full_Access_to_S3.ec2_full_access_to_s3_bucket_profile_name
-  # Associate the security group with the EC2 instance
-  security_groups = [module.sec_grp_http_https_ssh_database.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
-  key_name        = "AccessKey"
-
-  # Copy some files into the EC2
-  provisioner "file" {
-    source      = "./james-database.properties"
-    destination = "/${var.home-directory}/james-database.properties"
-  }
-
-  provisioner "file" {
-    source      = "./compose.yml"
-    destination = "/${var.home-directory}/compose.yml"
-  }
-
-  provisioner "file" {
-    source      = "./jdbc.jar"
-    destination = "/${var.home-directory}/jdbc.jar"
-  }
-
-  provisioner "file" {
-    source      = "./keystore"
-    destination = "/${var.home-directory}/keystore"
-  }
-
-  provisioner "file" {
-    source      = "./database_init.sql"
-    destination = "/${var.home-directory}/database_init.sql"
-  }
-
-  provisioner "file" {
-    source      = "./nginx.conf"
-    destination = "/${var.home-directory}/nginx.conf"
-  }
-
-  provisioner "file" {
-    source      = "./hosts"
-    destination = "/${var.home-directory}/hosts"
-  }
-
-  provisioner "file" {
-    source      = "./smtpserver_added25.xml"
-    destination = "/${var.home-directory}smtpserver_final.xml"
-  }
 
   connection {
     type        = "ssh"
@@ -203,6 +162,84 @@ resource "aws_instance" "my_instance" {
   tags = {
     Name = "THUSIA-V1"
   }
+
+  # iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+  iam_instance_profile = module.profile_gen_EC2_full_Access_to_S3.ec2_full_access_to_s3_bucket_profile_name
+  # Associate the security group with the EC2 instance
+  security_groups = [module.sec_grp_http_https_ssh_database.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
+  key_name        = "AccessKey"
+
+  # Copy some files into the EC2
+  provisioner "file" {
+    source      = "./james-database.properties"
+    destination = "/${var.home-directory}james-database.properties"
+  }
+
+  provisioner "file" {
+    source      = "./compose.yml"
+    destination = "/${var.home-directory}compose.yml"
+  }
+
+  provisioner "file" {
+    source      = "./jdbc.jar"
+    destination = "/${var.home-directory}jdbc.jar"
+  }
+
+  provisioner "file" {
+    source      = "./keystore_ca"
+    destination = "/${var.home-directory}keystore_ca"
+  }
+
+  provisioner "file" {
+    source      = "./database_init.sql"
+    destination = "/${var.home-directory}database_init.sql"
+  }
+
+  provisioner "file" {
+    source      = "./nginx.conf"
+    destination = "/${var.home-directory}nginx.conf"
+  }
+
+  provisioner "file" {
+    source      = "./hosts"
+    destination = "/${var.home-directory}hosts"
+  }
+
+  provisioner "file" {
+    source      = "./smtpserver.xml"
+    destination = "/${var.home-directory}smtpserver.xml"
+  }
+
+  provisioner "file" {
+    source      = "./imapserver.xml"
+    destination = "/${var.home-directory}imapserver.xml"
+  }
+
+  provisioner "file" {
+    source      = "./james_initialize.sh"
+    destination = "/${var.home-directory}james_initialize.sh"
+  }
+
+  provisioner "file" {
+    source      = "./crm_initialize.sh"
+    destination = "/${var.home-directory}crm_initialize.sh"
+  }
+
+    provisioner "file" {
+        source      = "./SSL-certificates/crm.awin.dk/crm_https_ssl_certificate.crt"
+        destination = "/${var.home-directory}crm_https_ssl_certificate.crt"
+    }
+
+    provisioner "file" {
+      source      = "./SSL-certificates/crm.awin.dk/crm_https_ssl_chain_certificate.crt"
+      destination = "/${var.home-directory}crm_https_ssl_chain_certificate.crt"
+    }
+
+    provisioner "file" {
+      source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_private_key.key"
+        destination = "/${var.home-directory}crm_https_ssl_private_key.key"
+    }
+
 
   user_data = <<-EOF
                 #!/bin/bash
@@ -247,32 +284,43 @@ resource "aws_instance" "my_instance" {
                 #Copy the file hosts to /etc/hosts. This requires SUDO access therefore could not be done via provisioning.
                 sudo cp ${var.home-directory}hosts /etc/hosts
 
-
                 #It is not a must to create the folders for mouting into container. Docker make the folders if they do not exist.
-                #BUT To avoid an error, first one should make the folder for database persistant data before give the ownership to mysql.
                 #This musr run only if it is the initialize mode: only if the variable "volume-initialize" is set to true
+                #Follwing volumes are needed
+                    # mariadb
+                    # james
+                    # certbot-etc
+                    # certbot-var
                 ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.db_volume}/
                 ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
+                ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/certbot-etc/
+                ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/certbot-var/
 
+                #To avoid an error, first one should make the folder for database persistant data before give the ownership to mysql.
                 #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
                 sudo chown -R 999:999 ${var.home-directory}volumes/${var.db_volume}/
 
                 #Run the containers
-                #It is important to run this command with (-d) to detach, otherwise the rest of the commands will not execute.
+                #It is important to run this command with (-d) to detach, otherwise the rest of the initializers will not execute.
                 docker-compose -f ${var.home-directory}compose.yml up -d
 
                 #Inform the user that you are waiting for the containers to be up and running
-                #The following commands will be executed only if the server is being initialized.
+                #The following initializers will be executed only if the server is being initialized.
                 ${!var.volume-initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
-                ${!var.volume-initialize ? "#": ""}sudo mkdir ${var.home-directory}d01_wait_90_sec/
-                ${!var.volume-initialize ? "#": ""}# Wait for 90 seconds before running the commands in CRM container.
-                ${!var.volume-initialize ? "#": ""}sleep 90
-                ${!var.volume-initialize ? "#": ""}echo "Containers are up and running. end of 90 seconds."
+                ${!var.volume-initialize ? "#": ""}sudo mkdir ${var.home-directory}d01_wait_20_sec/
+                ${!var.volume-initialize ? "#": ""}# Wait for 60 seconds before running the initializers in CRM container.
+                ${!var.volume-initialize ? "#": ""}sleep 20
+                ${!var.volume-initialize ? "#": ""}echo "Containers are up and running. end of 20 seconds."
 
-                ${!var.volume-initialize ? "#": ""}sudo cp ${var.home-directory}bucket/commands.sh ${var.home-directory}
-                ${!var.volume-initialize ? "#": ""}chmod +x ${var.home-directory}commands.sh
-                ${!var.volume-initialize ? "#": ""}echo "Running the commands in the CRM container..."
-                ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}commands.sh
+                #${!var.volume-initialize ? "#": ""}sudo cp ${var.home-directory}crm_initialize.sh ${var.home-directory}crmcrm.sh
+                ${!var.volume-initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh
+                ${!var.volume-initialize ? "#": ""}echo "Running the initializer in the CRM container..."
+                ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}crm_initialize.sh
+
+                ${!var.volume-initialize ? "#": ""}sudo chmod +x ${var.home-directory}james_initialize.sh
+                ${!var.volume-initialize ? "#": ""}echo "Running the initializer in the JAMES container..."
+                ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}james_initialize.sh
+                ${!var.volume-initialize ? "#": ""}sudo mkdir ${var.home-directory}d99_initialize_finished/
 
                 echo "Thusia server setup cmpleted."
               EOF
@@ -288,13 +336,14 @@ resource "aws_volume_attachment" "Thusia_data" {
 }
 
 output "ssh_connection_string" {
-  value = "ssh -i ${"AccessKey.pem"} ec2-user@${aws_instance.my_instance.public_dns}"
-}
-
-output "server_ip" {
-  value = aws_instance.my_instance.public_ip
+  value = "ssh -i AccessKey.pem ec2-user@awin.dk"
 }
 
 output "server_domain" {
   value = aws_instance.my_instance.public_dns
+}
+
+resource "aws_eip_association" "eip_assoc" {
+  instance_id = aws_instance.my_instance.id
+  allocation_id = var.eip_association_id
 }

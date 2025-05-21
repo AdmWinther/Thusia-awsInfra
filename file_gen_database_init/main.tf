@@ -12,7 +12,7 @@ variable "rest_api_db_password" {}
 
 resource "local_file" "database_init" {
   filename = "database_init.sql"
-  content  = <<EOF
+  content  = replace(<<EOF
 CREATE DATABASE ${var.james_db_name};
 CREATE USER '${var.james_db_username}'@'%' IDENTIFIED BY '${var.james_db_password}';
 GRANT ALL PRIVILEGES ON ${var.james_db_name}.* TO '${var.james_db_username}'@'%';
@@ -35,4 +35,5 @@ CREATE TABLE ${var.rest_api_db_name}.registered (
 INSERT INTO ${var.rest_api_db_name}.registered (username, status, last_update) VALUES ('admin@localhost', 'active', '2025-04-06 14:30:00');
 INSERT INTO ${var.rest_api_db_name}.registered (username, status, last_update) VALUES ('scam@localhost', 'failed', '2025-04-06 14:35:00');
 EOF
+    , "\r", "")
 }
