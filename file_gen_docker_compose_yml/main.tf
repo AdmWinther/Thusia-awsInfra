@@ -19,9 +19,16 @@ variable "james-container-name" {}
 variable "james-docker-image" {}
 variable "james_s3_bucket_name" {}
 
-#APACHE WEB related variables
-variable "apache-docker-image" {}
-variable "apache-container-name" {}
+#Test and demo emails password
+variable "awin_password" {}
+variable "jpo_password" {}
+variable "fbl_password" {}
+variable "dmarc_reports_password" {}
+
+variable "john_password" {}
+variable "jane_password" {}
+variable "test_password" {}
+variable "demo_password" {}
 
 #CRM related variables
 variable "crm-container-name" {}
@@ -86,6 +93,15 @@ module "file_gen_crm_initialize_sh" {
 
 module "file_gen_james_initialize_sh" {
   source = "../file_gen_james_initialize_sh"
+    awin_password           = var.awin_password
+    jpo_password            = var.jpo_password
+    fbl_password            = var.fbl_password
+    dmarc_reports_password  = var.dmarc_reports_password
+
+    john_password           = var.john_password
+    jane_password           = var.jane_password
+    test_password           = var.test_password
+    demo_password           = var.demo_password
 }
 
 module "file_gen_pg_hba_conf" {
@@ -170,9 +186,10 @@ services:
     image: ${var.crm-docker-image}
     container_name: ${var.crm-container-name}
     volumes:
-      - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/ssl/certs/crm.${var.domain_name}.crt
-      - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/ssl/certs/gd_bundle-g2-g1.crt
-      - ${var.home-directory}crm_https_ssl_private_key.key:/etc/ssl/private/crm.${var.domain_name}.key
+      - ${var.home-directory}crm_https_ssl_certificate.crt:/opt/bitnami/apache/conf/bitnami/certs/server.crt
+      - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/opt/bitnami/apache/conf/bitnami/certs/server-ca.crt
+      - ${var.home-directory}crm_https_ssl_private_key.key:/opt/bitnami/apache/conf/bitnami/certs/server.key
+
       - ${var.home-directory}volumes/${var.crm_volume}:/bitnami/suitecrm
     environment:
       ALLOW_EMPTY_PASSWORD: no
@@ -185,6 +202,7 @@ services:
       - ${var.docker-network}
     ports:
       - "8080:8080"
+      - "8443:8443"
     depends_on:
       - mariadb
       - james

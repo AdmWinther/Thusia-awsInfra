@@ -39,6 +39,17 @@ variable "james-container-name" {}
 variable "james-docker-image" {}
 variable "james_s3_bucket_name" {}
 
+#Test and Demo emails password
+variable "awin_password" {}
+variable "jpo_password" {}
+variable "fbl_password" {}
+variable "dmarc_reports_password" {}
+
+variable "john_password" {}
+variable "jane_password" {}
+variable "test_password" {}
+variable "demo_password" {}
+
 #APACHE WEB related variables
 variable "apache-docker-image" {}
 variable "apache-container-name" {}
@@ -105,8 +116,16 @@ module "file_gen_docker_compose_yml" {
   james_db_password           = var.james_db_password
   james_s3_bucket_name        = var.james_s3_bucket_name
 
-  apache-docker-image    = var.apache-docker-image
-  apache-container-name = var.apache-container-name
+  #Test and demo emails password
+  awin_password        = var.awin_password
+  jpo_password         = var.jpo_password
+  fbl_password         = var.fbl_password
+
+  dmarc_reports_password = var.dmarc_reports_password
+  john_password        = var.john_password
+  jane_password        = var.jane_password
+  test_password        = var.test_password
+  demo_password        = var.demo_password
 
   crm-container-name    = var.crm-container-name
   crm-docker-image      = var.crm-docker-image
@@ -307,10 +326,10 @@ resource "aws_instance" "my_instance" {
                 #Inform the user that you are waiting for the containers to be up and running
                 #The following initializers will be executed only if the server is being initialized.
                 ${!var.volume-initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
-                ${!var.volume-initialize ? "#": ""}sudo mkdir ${var.home-directory}d01_wait_20_sec/
+                ${!var.volume-initialize ? "#": ""}sudo mkdir ${var.home-directory}d01_wait_60_sec/
                 ${!var.volume-initialize ? "#": ""}# Wait for 60 seconds before running the initializers in CRM container.
-                ${!var.volume-initialize ? "#": ""}sleep 20
-                ${!var.volume-initialize ? "#": ""}echo "Containers are up and running. end of 20 seconds."
+                ${!var.volume-initialize ? "#": ""}sleep 60
+                ${!var.volume-initialize ? "#": ""}echo "Containers are up and running. end of 60 seconds."
 
                 #${!var.volume-initialize ? "#": ""}sudo cp ${var.home-directory}crm_initialize.sh ${var.home-directory}crmcrm.sh
                 ${!var.volume-initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh
