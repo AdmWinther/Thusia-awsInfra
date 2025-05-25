@@ -81,6 +81,7 @@ variable "home-directory" {}
 
 #Elastic ip association_id
 variable "eip_association_id" {}
+variable "my_ip_address" {}
 
 #EBC volume related variables
 variable "volume-initialize" {
@@ -138,6 +139,7 @@ module "file_gen_docker_compose_yml" {
 
   nginx-image = var.nginx-image
   nginx-container-name = var.nginx-container-name
+  my_ip_address = var.my_ip_address
 
   rest_api_db_name           = var.rest_api_db_name
   rest_api_db_username       = var.rest_api_db_username

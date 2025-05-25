@@ -44,6 +44,7 @@ variable "crm_user_password" {}
 #Nginx related variables
 variable "nginx-image" {}
 variable "nginx-container-name" {}
+variable "my_ip_address" {}
 
 #Rest-API related variables
 variable "rest_api_db_name" {}
@@ -85,6 +86,8 @@ module "file_gen_database_init" {
 
 module "file_gen_nginx_conf" {
   source = "../file_gen_nginx_conf"
+
+  my_ip_address = var.my_ip_address
 }
 
 module "file_gen_crm_initialize_sh" {
@@ -212,6 +215,10 @@ services:
     container_name: ${var.nginx-container-name}
     volumes:
       - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
+
+      - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/ssl-certificate.crt
+      - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/ssl_certificate_key.key
+      - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/ssl_ca_certificate.crt
     network_mode: host
     depends_on:
       - suitecrm

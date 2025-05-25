@@ -367,4 +367,15 @@ Then load the certificate.crt file into keystore. This is the file for our serve
 keytool -import -alias james -keystore your_keystore_filename -trustcacerts -file your_certificate_filename
 ```
 Now you have SSL certificate for your server. You can check the keystore file using OpenSSL.
+
+
+<h2>Enabling HTTPS for suitecrm</h2>
+to do it, I followed the instruction in this page: https://docs.bitnami.com/aws/apps/wordpress/administration/enable-https-ssl-apache/
+The SSL certificates should be copied to the folder:
+
+Certificate file	/opt/bitnami/apache/conf/bitnami/certs/server.crt
+Certificate key file	/opt/bitnami/apache/conf/bitnami/certs/server.key
+SSL-CA-CertificateFile “/opt/bitnami/apache/conf/bitnami/certs/server-ca.crt”
+That's it.
+```
 ```
