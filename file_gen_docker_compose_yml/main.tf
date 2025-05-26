@@ -21,6 +21,7 @@ variable "james_s3_bucket_name" {}
 
 #Test and demo emails password
 variable "awin_password" {}
+variable "crm_password" {}
 variable "jpo_password" {}
 variable "fbl_password" {}
 variable "dmarc_reports_password" {}
@@ -105,6 +106,7 @@ module "file_gen_james_initialize_sh" {
     jane_password           = var.jane_password
     test_password           = var.test_password
     demo_password           = var.demo_password
+    crm_password            = var.crm_password
 }
 
 module "file_gen_pg_hba_conf" {
@@ -211,17 +213,20 @@ services:
       - james
 
   ngx:
-    image: ${var.nginx-image}
-    container_name: ${var.nginx-container-name}
-    volumes:
-      - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
-
-      - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/ssl-certificate.crt
-      - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/ssl_certificate_key.key
-      - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/ssl_ca_certificate.crt
-    network_mode: host
-    depends_on:
-      - suitecrm
+      image: ${var.nginx-image}
+      container_name: ${var.nginx-container-name}
+      volumes:
+          - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
+          - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/ssl-certificate.crt
+          - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/ssl_certificate_key.key
+          - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/ssl_ca_certificate.crt
+      networks:
+          - ${var.docker-network}
+      ports:
+          - "80:80"
+          - "443:443"
+      depends_on:
+          - suitecrm
 
 networks:
   ${var.docker-network}:

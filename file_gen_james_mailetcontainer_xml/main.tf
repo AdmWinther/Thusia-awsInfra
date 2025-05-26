@@ -39,13 +39,24 @@ resource "local_file" "james_mailetcontainer_xml" {
     </spooler>
 
     <processors>
+        <!-- ######################################################################### -->
+        <!-- The root processor is a required processor - James routes all mail on the spool -->
+        <!-- through this processor first. -->
+        <!-- -->
+        <!-- This configuration is a sample configuration for the root processor. -->
         <processor state="root" enableJmx="true">
+             <!-- This mailet redirects mail for the user 'postmaster' at any local domain to -->
+             <!-- the postmaster address specified for the server. The postmaster address -->
+             <!-- is required by rfc822. Do not remove this mailet unless you are meeting -->
+             <!-- this requirement through other means  -->
             <mailet match="All" class="PostmasterAlias"/>
             <!-- Important check to avoid looping -->
             <!--mailet match="RelayLimit=30" class="Null"/-->
             <mailet match="RelayLimit=30" class="ToRepository">
                 <repositoryPath>file://var/mail/relay-limit-exceeded/</repositoryPath>
             </mailet>
+
+
 
             <mailet match="All" class="ToProcessor">
                 <processor>transport</processor>

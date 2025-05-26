@@ -376,6 +376,31 @@ The SSL certificates should be copied to the folder:
 Certificate file	/opt/bitnami/apache/conf/bitnami/certs/server.crt
 Certificate key file	/opt/bitnami/apache/conf/bitnami/certs/server.key
 SSL-CA-CertificateFile “/opt/bitnami/apache/conf/bitnami/certs/server-ca.crt”
-That's it.
+That's it you may think, though, there is a problem. NGINX messes with you. You might see that when you reach the app via https://crm.awin.dk:8443, everything goes well, but when you go through https://cmr.awin.dk, it does not show you the admin menu.
+When you reach the app via https://crm.awin.dk:8443, you are not using NGINX, but when you reach the app via https://crm.awin.dk, you are using NGINX. Then you would see some of the post requests return 502 error. (Bad Gateway).
+If you look at the NGINX logs, you would see that NGINX throws an error saying 
+```
+upstream sent too big header while reading response header from upstream
+```
+This is because NGINX has limited buffer, therefore, either you need to increase the buffer size or you need to disable the NGINX buffer.
+For now I fixed the issue by adding the following lines to the NGINX configuration file:
+```
+http {
+    ...
+    proxy_buffer_size   128k;
+    proxy_buffers   4 256k;
+    proxy_busy_buffers_size   256k;
+    ...
+}
+```
+proxy_buffer_size   128k;
+proxy_buffers   4 256k;
+proxy_busy_buffers_size   256k;
+```
+As you can see these must be added in the http section of the NGINX configuration file.
+
+
+<h2>What do you need when restarting SuiteCRM</h2>
+You need to set the email account. At the moment it is crm@awin.dk with password that is saved in the terraform.tfvar file.
 ```
 ```

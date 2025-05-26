@@ -41,6 +41,7 @@ variable "james_s3_bucket_name" {}
 
 #Test and Demo emails password
 variable "awin_password" {}
+variable "crm_password" {}
 variable "jpo_password" {}
 variable "fbl_password" {}
 variable "dmarc_reports_password" {}
@@ -92,8 +93,6 @@ variable "volume-id" {}
 
 #DNS related variables
 variable "domain_name" {}
-
-variable "thusia_admin_email_address" {}
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_docker_compose_yml" {
   source                = "./file_gen_docker_compose_yml"
@@ -119,6 +118,7 @@ module "file_gen_docker_compose_yml" {
 
   #Test and demo emails password
   awin_password        = var.awin_password
+  crm_password         = var.crm_password
   jpo_password         = var.jpo_password
   fbl_password         = var.fbl_password
 
@@ -314,8 +314,6 @@ resource "aws_instance" "my_instance" {
                     # certbot-var
                 ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.db_volume}/
                 ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
-                ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/certbot-etc/
-                ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/certbot-var/
 
                 #To avoid an error, first one should make the folder for database persistant data before give the ownership to mysql.
                 #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.

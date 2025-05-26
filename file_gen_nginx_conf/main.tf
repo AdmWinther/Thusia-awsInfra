@@ -4,19 +4,14 @@ resource "local_file" "nginx_conf" {
   content  = <<EOF
 events{}
 http{
+  proxy_buffer_size   128k;
+  proxy_buffers   4 256k;
+  proxy_busy_buffers_size   256k;
   server {
     listen 80;
     server_name crm.awin.dk;
 
     return 301 https://$host$request_uri; # Redirect HTTP to HTTPS
-
-    # location / {
-    #     proxy_pass https://${var.my_ip_address}:8443; # Use the host computer's IP address
-    #     proxy_set_header Host $host;
-    #     proxy_set_header X-Real-IP $remote_addr;
-    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    #     proxy_set_header X-Forwarded-Proto $scheme;
-    # }
   }
   server {
       listen 443 ssl;
