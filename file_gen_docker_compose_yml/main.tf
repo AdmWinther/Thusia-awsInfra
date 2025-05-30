@@ -19,6 +19,12 @@ variable "james-container-name" {}
 variable "james-docker-image" {}
 variable "james_s3_bucket_name" {}
 
+#AWS SES related variables
+variable "aws_ses_mail_relay_address" {}
+variable "aws_ses_mail_relay_port" {}
+variable "aws_ses_smtp_relay_username" {}
+variable "aws_ses_smtp_relay_password" {}
+
 #Test and demo emails password
 variable "awin_password" {}
 variable "crm_password" {}
@@ -127,6 +133,12 @@ module "file_gen_smtpserver_xml" {
 
 module "file_gen_mailetcontainer_xml" {
   source = "../file_gen_james_mailetcontainer_xml"
+
+  aws_ses_mail_relay_address = var.aws_ses_mail_relay_address
+  aws_ses_mail_relay_port = var.aws_ses_mail_relay_port
+  domain_name = var.domain_name
+  aws_ses_smtp_relay_username = var.aws_ses_smtp_relay_username
+  aws_ses_smtp_relay_password = var.aws_ses_smtp_relay_password
 }
 
 resource "local_file" "docker_compose_yml" {
@@ -158,6 +170,7 @@ services:
     container_name: ${var.james-container-name}
     restart: always
     volumes:
+      - ${var.home-directory}mailetcontainer.xml:/root/conf/mailetcontainer.xml
       - ${var.home-directory}smtpserver.xml:/root/conf/smtpserver.xml
       - ${var.home-directory}imapserver.xml:/root/conf/imapserver.xml
       - type: bind

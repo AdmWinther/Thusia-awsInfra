@@ -39,6 +39,12 @@ variable "james-container-name" {}
 variable "james-docker-image" {}
 variable "james_s3_bucket_name" {}
 
+#AWS SES related variables
+variable "aws_ses_mail_relay_address" {}
+variable "aws_ses_mail_relay_port" {}
+variable "aws_ses_smtp_relay_username" {}
+variable "aws_ses_smtp_relay_password" {}
+
 #Test and Demo emails password
 variable "awin_password" {}
 variable "crm_password" {}
@@ -115,6 +121,12 @@ module "file_gen_docker_compose_yml" {
   james_db_username           = var.james_db_username
   james_db_password           = var.james_db_password
   james_s3_bucket_name        = var.james_s3_bucket_name
+
+  #AWS SES mail relay credentials
+  aws_ses_mail_relay_address = var.aws_ses_mail_relay_address
+  aws_ses_mail_relay_port    = var.aws_ses_mail_relay_port
+  aws_ses_smtp_relay_username = var.aws_ses_smtp_relay_username
+  aws_ses_smtp_relay_password = var.aws_ses_smtp_relay_password
 
   #Test and demo emails password
   awin_password        = var.awin_password
@@ -239,6 +251,11 @@ resource "aws_instance" "my_instance" {
   provisioner "file" {
     source      = "./james_initialize.sh"
     destination = "/${var.home-directory}james_initialize.sh"
+  }
+
+  provisioner "file" {
+    source      = "./mailetcontainer.xml"
+    destination = "/${var.home-directory}mailetcontainer.xml"
   }
 
   provisioner "file" {
