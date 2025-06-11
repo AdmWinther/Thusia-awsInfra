@@ -393,14 +393,18 @@ http {
     ...
 }
 ```
+As you can see these must be added in the http section of the NGINX configuration file.
+```
 proxy_buffer_size   128k;
 proxy_buffers   4 256k;
 proxy_busy_buffers_size   256k;
 ```
-As you can see these must be added in the http section of the NGINX configuration file.
-
 
 <h2>What do you need when restarting SuiteCRM</h2>
 You need to set the email account. At the moment it is crm@awin.dk with password that is saved in the terraform.tfvar file.
+
+We need to add a workflow for email validation. as a part of it, we need a random number for the email validation.
+The following code generates a random number between 1000 and 9999.
 ```
+{substring({multiply({multiply({now(Y)}; {power({now(s)}; 2)})}; {add({now(His)}; {now(j)}})}; 1 ; 4)}
 ```

@@ -57,11 +57,6 @@ variable "jane_password" {}
 variable "test_password" {}
 variable "demo_password" {}
 
-#APACHE WEB related variables
-variable "apache-docker-image" {}
-variable "apache-container-name" {}
-
-
 #CRM related variables
 variable "crm-container-name" {}
 variable "crm-docker-image" {}
