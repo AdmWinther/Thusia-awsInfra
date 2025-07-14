@@ -24,10 +24,18 @@ resource "aws_security_group" "http_https_ssh_database" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-    # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8081
+    # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8080
   ingress {
     from_port   = 8080
     to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # For the Joomla web server, we need to allow port 80 but since it is taken, we map it to 8081
+  ingress {
+    from_port   = 8081
+    to_port     = 8081
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

@@ -70,7 +70,7 @@ these are the steps to make the keystore:
 
 In this stage, the code will ask you for a password. The default is ```james72laBalle```
 You need to enter this password two times in the beginning. then you answer some silly questions and
-at the end yes or y. then you would see that a new file nemed "keystore" is created in the folder.
+at the end yes or y. then you would see that a new file named "keystore" is created in the folder.
 
 2.2.5- Copy the keystore file from the container to your EC2 instance.
 You first need to exit the container and then using "docker cp" to copy the file to the EC2.
@@ -323,7 +323,7 @@ then the server responded:
 ```
 <h3>Turning on the authentication</h3>
 Followed the comments on git page: https://github.com/apache/james-project/blob/master/server/apps/spring-app/src/main/resources/smtpserver.xml
-disconnecting all of the ports, and only letting port 25 to be open.
+disconnecting all ports, and only letting port 25 to be open.
 Use 
 ```
 auth login
@@ -347,8 +347,8 @@ SMTP STARTTLS active 587
 IMAP SSL active 993
 IMAP STARTTLS active 143
 
-I need to use a SSL certificate. I cannot use self signed SSL certificate any more. So I used this page:https://james.apache.org/server/config-ssl-tls.html
-First make a self signed certificate using the following command:
+I need to use SSL certificate. I cannot use self-signed SSL certificate anymore. So I used this page:https://james.apache.org/server/config-ssl-tls.html
+First make a self-signed certificate using the following command:
 ```
 keytool -genkey -alias james -keyalg RSA -keystore keystore
 ```
@@ -358,7 +358,7 @@ Then we need to make a certificate request (CSR) file. To do this, run this comm
 keytool -certreq -keyalg RSA -alias james -file certreq.csr -keystore keystore
 ```
 This will generate the file certreq.csr. Then I need to use the CSR file to generate the SSL. I used ZeroSSL. ZeroSSL gives two files. ca_bundle.crt and certificate.crt. we need to load both into keystore.
-Use the following command to load the ca_bundle.crt file into keystore:(ca_bundle.crt is the file that shows how ZeroSSL is trusted)
+Use the following command to load the ca_bundle.crt file into keystore: (ca_bundle.crt is the file that shows how ZeroSSL is trusted)
 ```
 keytool -import -alias root -keystore keystore -trustcacerts -file ca_certificate.crt
 ```
@@ -383,7 +383,7 @@ If you look at the NGINX logs, you would see that NGINX throws an error saying
 upstream sent too big header while reading response header from upstream
 ```
 This is because NGINX has limited buffer, therefore, either you need to increase the buffer size or you need to disable the NGINX buffer.
-For now I fixed the issue by adding the following lines to the NGINX configuration file:
+For now, I fixed the issue by adding the following lines to the NGINX configuration file:
 ```
 http {
     ...
@@ -401,10 +401,20 @@ proxy_busy_buffers_size   256k;
 ```
 
 <h2>What do you need when restarting SuiteCRM</h2>
-You need to set the email account. At the moment it is crm@awin.dk with password that is saved in the terraform.tfvar file.
+You need to set the email account. At the moment it is crm@awin.dk with password that is saved in Terraform.tfvar file.
 
 We need to add a workflow for email validation. as a part of it, we need a random number for the email validation.
 The following code generates a random number between 1000 and 9999.
 ```
 {substring({multiply({multiply({now(Y)}; {power({now(s)}; 2)})}; {add({now(His)}; {now(j)}})}; 1 ; 4)}
+```
+
+
+<h1>How to run the Joomla</h1>
+the first run was done by the following command:
+```
+docker run --rm --name joomla -p 8081:80 -e JOOMLA_DB_HOST=mariadb -e JOOMLA_DB_USER=joomladb -e 
+    JOOMLA_DB_PASSWORD=joomlasecret -e JOOMLA_DB_NAME=jdb -e JOOMLA_SITE_NAME=awin.dk -e JOOMLA_ADMIN_USER=Joomla_Admin
+    -e JOOMLA_ADMIN_USERNAME=admin -e JOOMLA_ADMIN_PASSWORD=admin -e  JOOMLA_ADMIN_EMAIL=joomla@awin.dk --network
+    thusia_my-docker-network -d joomla:5.3.2-php8.3-apache
 ```

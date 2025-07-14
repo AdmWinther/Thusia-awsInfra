@@ -29,6 +29,7 @@ variable "aws_ses_smtp_relay_password" {}
 variable "awin_password" {}
 variable "crm_password" {}
 variable "jpo_password" {}
+variable "joomla_password" {}
 variable "fbl_password" {}
 variable "dmarc_reports_password" {}
 
@@ -47,7 +48,6 @@ variable "crm_volume" {}
 variable "crm_user_username" {}
 variable "crm_user_password" {}
 
-
 #Nginx related variables
 variable "nginx-image" {}
 variable "nginx-container-name" {}
@@ -57,6 +57,13 @@ variable "my_ip_address" {}
 variable "rest_api_db_name" {}
 variable "rest_api_db_username" {}
 variable "rest_api_db_password" {}
+
+#Joomla related variables
+variable "joomla_db_name" {}
+variable "joomla_db_username" {}
+variable "joomla_db_password" {}
+variable "joomla-container-name" {}
+variable "joomla-docker-image" {}
 
 #EBC volume related variables
 variable "volume-initialize" {
@@ -85,6 +92,9 @@ module "file_gen_database_init" {
   crm_db_username   = var.crm-db-username
   crm_db_password   = var.crm-db-password
 
+  joomla_db_name = var.joomla_db_name
+  joomla_db_username = var.joomla_db_username
+  joomla_db_password = var.joomla_db_password
 
   rest_api_db_name   = var.rest_api_db_name
   rest_api_db_username   = var.rest_api_db_username
@@ -105,6 +115,7 @@ module "file_gen_james_initialize_sh" {
   source = "../file_gen_james_initialize_sh"
     awin_password           = var.awin_password
     jpo_password            = var.jpo_password
+    joomla_password         = var.joomla_password
     fbl_password            = var.fbl_password
     dmarc_reports_password  = var.dmarc_reports_password
 
@@ -113,10 +124,6 @@ module "file_gen_james_initialize_sh" {
     test_password           = var.test_password
     demo_password           = var.demo_password
     crm_password            = var.crm_password
-}
-
-module "file_gen_pg_hba_conf" {
-  source = "../file_gen_pg_hba_conf"
 }
 
 module "file_gen_etc_hosts" {
@@ -224,6 +231,27 @@ services:
     depends_on:
       - mariadb
       - james
+
+  joomla:
+    image: ${var.joomla-docker-image}
+    container_name: ${var.joomla-container-name}
+    ports:
+      - "8081:80"
+    environment:
+      JOOMLA_DB_HOST: ${var.db-container-name}
+      JOOMLA_DB_USER: ${var.joomla_db_username}
+      JOOMLA_DB_PASSWORD: ${var.joomla_db_password}
+      JOOMLA_DB_NAME: ${var.joomla_db_name}
+      JOOMLA_ADMIN_USER: Joomla_Admin
+      JOOMLA_ADMIN_USERNAME: admin
+      JOOMLA_ADMIN_PASSWORD: admin
+      JOOMLA_ADMIN_EMAIL: joomla@awin.dk
+    networks:
+      - ${var.docker-network}
+    depends_on:
+        - mariadb
+        - james
+
 
   ngx:
       image: ${var.nginx-image}

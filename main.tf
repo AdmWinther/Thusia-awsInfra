@@ -48,6 +48,7 @@ variable "aws_ses_smtp_relay_password" {}
 #Test and Demo emails password
 variable "awin_password" {}
 variable "crm_password" {}
+variable "joomla_password" {}
 variable "jpo_password" {}
 variable "fbl_password" {}
 variable "dmarc_reports_password" {}
@@ -76,6 +77,13 @@ variable "nginx-container-name" {}
 variable "rest_api_db_name" {}
 variable "rest_api_db_username" {}
 variable "rest_api_db_password" {}
+
+#James Server related variables
+variable "joomla_db_name" {}
+variable "joomla_db_username" {}
+variable "joomla_db_password" {}
+variable "joomla-container-name" {}
+variable "joomla-docker-image" {}
 
 #AWS-EC2 related variables
 variable "ec2-ami" {}
@@ -126,6 +134,7 @@ module "file_gen_docker_compose_yml" {
     #Test and demo emails password
     awin_password        = var.awin_password
     crm_password         = var.crm_password
+    joomla_password      = var.joomla_password
     jpo_password         = var.jpo_password
     fbl_password         = var.fbl_password
 
@@ -147,6 +156,12 @@ module "file_gen_docker_compose_yml" {
     nginx-image = var.nginx-image
     nginx-container-name = var.nginx-container-name
     my_ip_address = var.my_ip_address
+
+    joomla-container-name  = var.joomla-container-name
+    joomla-docker-image    = var.joomla-docker-image
+    joomla_db_name               = var.joomla_db_name
+    joomla_db_username           = var.joomla_db_username
+    joomla_db_password           = var.joomla_db_password
 
     rest_api_db_name           = var.rest_api_db_name
     rest_api_db_username       = var.rest_api_db_username
