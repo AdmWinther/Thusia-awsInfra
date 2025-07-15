@@ -15,8 +15,8 @@
 ### SSH keys ###
 *.pem
 *.ppk
-keystore
-keystore_ca
+james_keystore_with_ssl_certificate_do_not_delete
+james_keystore_with_ssl_certificate_do_not_delete
 *certificate*
 *credential*
 *.crt

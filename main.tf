@@ -61,6 +61,7 @@ variable "demo_password" {}
 #CRM related variables
 variable "crm-container-name" {}
 variable "crm-docker-image" {}
+variable "crm_web_port_On_host" {}
 variable "crm-db-name" {}
 variable "crm-db-username" {}
 variable "crm-db-password" {}
@@ -78,12 +79,15 @@ variable "rest_api_db_name" {}
 variable "rest_api_db_username" {}
 variable "rest_api_db_password" {}
 
-#James Server related variables
+#Joomla  related variables
 variable "joomla_db_name" {}
 variable "joomla_db_username" {}
 variable "joomla_db_password" {}
 variable "joomla-container-name" {}
 variable "joomla-docker-image" {}
+variable "joomla_volume" {}
+variable "joomla_web_port_On_host" {}
+
 
 #AWS-EC2 related variables
 variable "ec2-ami" {}
@@ -102,47 +106,26 @@ variable "volume-id" {}
 
 #DNS related variables
 variable "domain_name" {}
-#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    config file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    FILE GENERATOR   XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    DOCKER COMPOSE file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_docker_compose_yml" {
     source                = "./file_gen_docker_compose_yml"
 
     home-directory        = var.home-directory
     docker-network        = var.docker-network
-    domain_name           = var.domain_name
 
-    db_software           = var.db_software
     db-container-name     = var.db-container-name
     db-docker-image       = var.db-docker-image
     db_root_password      = var.db_root_password
-    db_driver_className   = var.db_driver_className
     db_volume             = var.db_volume
 
 
     james-container-name  = var.james-container-name
     james-docker-image    = var.james-docker-image
-    james_db_name               = var.james_db_name
-    james_db_username           = var.james_db_username
-    james_db_password           = var.james_db_password
-    james_s3_bucket_name        = var.james_s3_bucket_name
-
-    #AWS SES mail relay credentials
-    aws_ses_mail_relay_address = var.aws_ses_mail_relay_address
-    aws_ses_mail_relay_port    = var.aws_ses_mail_relay_port
-    aws_ses_smtp_relay_username = var.aws_ses_smtp_relay_username
-    aws_ses_smtp_relay_password = var.aws_ses_smtp_relay_password
-
-    #Test and demo emails password
-    awin_password        = var.awin_password
-    crm_password         = var.crm_password
-    joomla_password      = var.joomla_password
-    jpo_password         = var.jpo_password
-    fbl_password         = var.fbl_password
-
-    dmarc_reports_password = var.dmarc_reports_password
-    john_password        = var.john_password
-    jane_password        = var.jane_password
-    test_password        = var.test_password
-    demo_password        = var.demo_password
 
     crm-container-name    = var.crm-container-name
     crm-docker-image      = var.crm-docker-image
@@ -155,27 +138,109 @@ module "file_gen_docker_compose_yml" {
 
     nginx-image = var.nginx-image
     nginx-container-name = var.nginx-container-name
-    my_ip_address = var.my_ip_address
 
     joomla-container-name  = var.joomla-container-name
     joomla-docker-image    = var.joomla-docker-image
-    joomla_db_name               = var.joomla_db_name
-    joomla_db_username           = var.joomla_db_username
-    joomla_db_password           = var.joomla_db_password
-
-    rest_api_db_name           = var.rest_api_db_name
-    rest_api_db_username       = var.rest_api_db_username
-    rest_api_db_password       = var.rest_api_db_password
+    joomla_db_name         = var.joomla_db_name
+    joomla_db_username     = var.joomla_db_username
+    joomla_db_password     = var.joomla_db_password
+    joomla_volume          = var.joomla_volume
 
     volume-initialize     = var.volume-initialize
 }
 
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Database CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+module "file_gen_database_init" {
+    source = "./file_gen_database_init"
+    james_db_name = var.james_db_name
+    james_db_username = var.james_db_username
+    james_db_password = var.james_db_password
 
-#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Security Grp.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    crm_db_name   = var.crm-db-name
+    crm_db_username   = var.crm-db-username
+    crm_db_password   = var.crm-db-password
+
+    joomla_db_name = var.joomla_db_name
+    joomla_db_username = var.joomla_db_username
+    joomla_db_password = var.joomla_db_password
+
+    rest_api_db_name   = var.rest_api_db_name
+    rest_api_db_username   = var.rest_api_db_username
+    rest_api_db_password   = var.rest_api_db_password
+}
+
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    SuiteCRM CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+module "file_gen_crm_initialize_sh" {
+    source = "./file_gen_crm_initialize_sh"
+}
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JAMES CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+module "file_gen_james_database_properties" {
+    source = "./file_gen_james_database_properties"
+    db_software           = var.db_software
+    db-container-name     = var.db-container-name
+    james_db_username           = var.james_db_username
+    james_db_password           = var.james_db_password
+    db_driver_className   = var.db_driver_className
+
+    james_db_name         = var.james_db_name
+}
+
+module "file_gen_james_initialize_sh" {
+    source = "./file_gen_james_initialize_sh"
+    awin_password           = var.awin_password
+    jpo_password            = var.jpo_password
+    joomla_password         = var.joomla_password
+    fbl_password            = var.fbl_password
+    dmarc_reports_password  = var.dmarc_reports_password
+
+    john_password           = var.john_password
+    jane_password           = var.jane_password
+    test_password           = var.test_password
+    demo_password           = var.demo_password
+    crm_password            = var.crm_password
+}
+
+module "file_gen_james_imapserver_xml" {
+    source = "./file_gen_james_imapserver_xml"
+}
+
+module "file_gen_smtpserver_xml" {
+    source = "./file_gen_james_smtpserver_xml"
+}
+
+module "file_gen_mailetcontainer_xml" {
+    source = "./file_gen_james_mailetcontainer_xml"
+
+    aws_ses_mail_relay_address = var.aws_ses_mail_relay_address
+    aws_ses_mail_relay_port = var.aws_ses_mail_relay_port
+    domain_name = var.domain_name
+    aws_ses_smtp_relay_username = var.aws_ses_smtp_relay_username
+    aws_ses_smtp_relay_password = var.aws_ses_smtp_relay_password
+}
+
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    NGINX CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+module "file_gen_nginx_conf" {
+    source = "./file_gen_nginx_nginx_conf"
+    my_ip_address = var.my_ip_address
+    crm_web_port_On_host = var.crm_web_port_On_host
+    joomla_web_port_On_host = var.joomla_web_port_On_host
+    domain_name = var.domain_name
+}
+
+module "file_gen_etc_hosts" {
+    source = "./file_gen_etc_hosts"
+    domain_name = var.domain_name
+}
+
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Security Grp.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 # Create a security group to allow SSH, HTTP and HTTPS traffic
 module "sec_grp_http_https_ssh_database" {
     source    = "./sec_grp_http_https_ssh_database"
     my_vpc_id = var.my_vpc_id
+    crm_web_port_On_host = var.crm_web_port_On_host
+    joomla_web_port_On_host = var.joomla_web_port_On_host
 }
 module "sec_grp_mail_server" {
     source    = "./sec_grp_mail_server"
@@ -229,8 +294,8 @@ resource "aws_instance" "my_instance" {
     }
 
     provisioner "file" {
-        source      = "./keystore_ca"
-        destination = "/${var.home-directory}keystore_ca"
+        source      = "./james_keystore_with_ssl_certificate_do_not_delete"
+        destination = "/${var.home-directory}keystore"
     }
 
     provisioner "file" {
@@ -340,6 +405,7 @@ resource "aws_instance" "my_instance" {
             # certbot-var
         ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.db_volume}/
         ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
+        ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.joomla_volume}/
 
         #To avoid an error, first one should make the folder for database persistant data before give the ownership to mysql.
         #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
@@ -352,20 +418,15 @@ resource "aws_instance" "my_instance" {
         #Inform the user that you are waiting for the containers to be up and running
         #The following initializers will be executed only if the server is being initialized.
         ${!var.volume-initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
-        ${!var.volume-initialize ? "#": ""}sudo mkdir ${var.home-directory}d01_wait_60_sec/
-        ${!var.volume-initialize ? "#": ""}# Wait for 60 seconds before running the initializers in CRM container.
         ${!var.volume-initialize ? "#": ""}sleep 60
-        ${!var.volume-initialize ? "#": ""}echo "Containers are up and running. end of 60 seconds."
 
-        #${!var.volume-initialize ? "#": ""}sudo cp ${var.home-directory}crm_initialize.sh ${var.home-directory}crmcrm.sh
+        # Changing the ownership of the database initializers file and execing it.
         ${!var.volume-initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh
-        ${!var.volume-initialize ? "#": ""}echo "Running the initializer in the CRM container..."
         ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}crm_initialize.sh
 
+        # Changing the ownership of the james initializers file and execing it.
         ${!var.volume-initialize ? "#": ""}sudo chmod +x ${var.home-directory}james_initialize.sh
-        ${!var.volume-initialize ? "#": ""}echo "Running the initializer in the JAMES container..."
         ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}james_initialize.sh
-        ${!var.volume-initialize ? "#": ""}sudo mkdir ${var.home-directory}d99_initialize_finished/
 
         echo "Thusia server setup cmpleted."
     EOF
@@ -379,14 +440,6 @@ resource "aws_volume_attachment" "Thusia_data" {
   # Ensure that the attachment waits for the instance to be ready.
   depends_on = [aws_instance.my_instance]
 }
-
-# output "ssh_connection_string" {
-#   value = "ssh -i AccessKey.pem ec2-user@awin.dk"
-# }
-#
-# output "server_domain" {
-#   value = aws_instance.my_instance.public_dns
-# }
 
 resource "aws_eip_association" "eip_assoc" {
   instance_id = aws_instance.my_instance.id

@@ -1,42 +1,16 @@
 variable "home-directory" {}
-variable "domain_name" {}
 #Docker related variables
 variable "docker-network" {}
 
 #Database Container related variables
 variable "db-container-name" {}
 variable "db-docker-image" {}
-variable "db_software" {}
 variable "db_root_password" {}
-variable "db_driver_className" {}
 variable "db_volume" {}
 
 #James Server related variables
-variable "james_db_name" {}
-variable "james_db_username" {}
-variable "james_db_password" {}
 variable "james-container-name" {}
 variable "james-docker-image" {}
-variable "james_s3_bucket_name" {}
-
-#AWS SES related variables
-variable "aws_ses_mail_relay_address" {}
-variable "aws_ses_mail_relay_port" {}
-variable "aws_ses_smtp_relay_username" {}
-variable "aws_ses_smtp_relay_password" {}
-
-#Test and demo emails password
-variable "awin_password" {}
-variable "crm_password" {}
-variable "jpo_password" {}
-variable "joomla_password" {}
-variable "fbl_password" {}
-variable "dmarc_reports_password" {}
-
-variable "john_password" {}
-variable "jane_password" {}
-variable "test_password" {}
-variable "demo_password" {}
 
 #CRM related variables
 variable "crm-container-name" {}
@@ -51,12 +25,6 @@ variable "crm_user_password" {}
 #Nginx related variables
 variable "nginx-image" {}
 variable "nginx-container-name" {}
-variable "my_ip_address" {}
-
-#Rest-API related variables
-variable "rest_api_db_name" {}
-variable "rest_api_db_username" {}
-variable "rest_api_db_password" {}
 
 #Joomla related variables
 variable "joomla_db_name" {}
@@ -64,88 +32,11 @@ variable "joomla_db_username" {}
 variable "joomla_db_password" {}
 variable "joomla-container-name" {}
 variable "joomla-docker-image" {}
+variable "joomla_volume" {}
 
 #EBC volume related variables
 variable "volume-initialize" {
   type = bool
-}
-
-module "file_gen_james_database_properties" {
-  source = "../file_gen_james_database_properties"
-  db_software           = var.db_software
-  db-container-name     = var.db-container-name
-  james_db_username           = var.james_db_username
-  james_db_password           = var.james_db_password
-  db_driver_className   = var.db_driver_className
-
-  james_db_name         = var.james_db_name
-}
-
-
-module "file_gen_database_init" {
-  source = "../file_gen_database_init"
-  james_db_name = var.james_db_name
-  james_db_username = var.james_db_username
-  james_db_password = var.james_db_password
-
-  crm_db_name   = var.crm-db-name
-  crm_db_username   = var.crm-db-username
-  crm_db_password   = var.crm-db-password
-
-  joomla_db_name = var.joomla_db_name
-  joomla_db_username = var.joomla_db_username
-  joomla_db_password = var.joomla_db_password
-
-  rest_api_db_name   = var.rest_api_db_name
-  rest_api_db_username   = var.rest_api_db_username
-  rest_api_db_password   = var.rest_api_db_password
-}
-
-module "file_gen_nginx_conf" {
-  source = "../file_gen_nginx_conf"
-
-  my_ip_address = var.my_ip_address
-}
-
-module "file_gen_crm_initialize_sh" {
-  source = "../file_gen_crm_initialize_sh"
-}
-
-module "file_gen_james_initialize_sh" {
-  source = "../file_gen_james_initialize_sh"
-    awin_password           = var.awin_password
-    jpo_password            = var.jpo_password
-    joomla_password         = var.joomla_password
-    fbl_password            = var.fbl_password
-    dmarc_reports_password  = var.dmarc_reports_password
-
-    john_password           = var.john_password
-    jane_password           = var.jane_password
-    test_password           = var.test_password
-    demo_password           = var.demo_password
-    crm_password            = var.crm_password
-}
-
-module "file_gen_etc_hosts" {
-  source = "../file_gen_etc_hosts"
-}
-
-module "file_gen_imapserver_xml" {
-  source = "../file_gen_imapserver_xml"
-}
-
-module "file_gen_smtpserver_xml" {
-  source = "../file_gen_smtpserver_xml"
-}
-
-module "file_gen_mailetcontainer_xml" {
-  source = "../file_gen_james_mailetcontainer_xml"
-
-  aws_ses_mail_relay_address = var.aws_ses_mail_relay_address
-  aws_ses_mail_relay_port = var.aws_ses_mail_relay_port
-  domain_name = var.domain_name
-  aws_ses_smtp_relay_username = var.aws_ses_smtp_relay_username
-  aws_ses_smtp_relay_password = var.aws_ses_smtp_relay_password
 }
 
 resource "local_file" "docker_compose_yml" {
@@ -189,7 +80,7 @@ services:
         target: /root/libs/jdbc.jar
 
       - type: bind
-        source: ${var.home-directory}keystore_ca
+        source: ${var.home-directory}keystore
         target: /root/conf/keystore
 
     ports:
@@ -226,6 +117,7 @@ services:
     networks:
       - ${var.docker-network}
     ports:
+      # We need 8080 for the REST API of SuiteCRM and 8443 for the web interface on HTTPS.
       - "8080:8080"
       - "8443:8443"
     depends_on:
@@ -246,6 +138,8 @@ services:
       JOOMLA_ADMIN_USERNAME: admin
       JOOMLA_ADMIN_PASSWORD: admin
       JOOMLA_ADMIN_EMAIL: joomla@awin.dk
+    volumes:
+      - ${var.home-directory}volumes/${var.joomla_volume}:/var/www/html
     networks:
       - ${var.docker-network}
     depends_on:

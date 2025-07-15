@@ -3,6 +3,16 @@ variable "my_vpc_id" {
   type        = string
 }
 
+variable "crm_web_port_On_host" {
+  description = "The port that the CRM web server will be accessible on the host machine"
+  type        = string
+}
+
+variable "joomla_web_port_On_host" {
+  description = "The port that the Joomla web server will be accessible on the host machine"
+  type        = string
+}
+
 resource "aws_security_group" "http_https_ssh_database" {
   name        = "http_https_ssh_database_sg"
   description = "Allow SSH and HTTP and HTTPS traffic"
@@ -34,15 +44,15 @@ resource "aws_security_group" "http_https_ssh_database" {
 
   # For the Joomla web server, we need to allow port 80 but since it is taken, we map it to 8081
   ingress {
-    from_port   = 8081
-    to_port     = 8081
+    from_port   = var.joomla_web_port_On_host
+    to_port     = var.joomla_web_port_On_host
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    from_port   = 8443
-    to_port     = 8443
+    from_port   = var.crm_web_port_On_host
+    to_port     = var.crm_web_port_On_host
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
