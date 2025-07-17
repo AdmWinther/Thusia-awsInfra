@@ -87,6 +87,7 @@ variable "joomla-container-name" {}
 variable "joomla-docker-image" {}
 variable "joomla_volume" {}
 variable "joomla_web_port_On_host" {}
+variable "joomla_max_package_size" {}
 
 
 #AWS-EC2 related variables
@@ -98,11 +99,16 @@ variable "eip_association_id" {}
 variable "my_ip_address" {}
 
 #EBC volume related variables
-variable "volume-initialize" {
+variable "container_volume_initialize" {
     type = bool
 }
-variable "volume-id" {}
+variable "containers_volume_id" {}
 
+
+#****variable "refresh_docker_images" {
+#****    type = bool
+#****}
+#****variable "docker_images_volume_id" {}
 
 #DNS related variables
 variable "domain_name" {}
@@ -146,7 +152,7 @@ module "file_gen_docker_compose_yml" {
     joomla_db_password     = var.joomla_db_password
     joomla_volume          = var.joomla_volume
 
-    volume-initialize     = var.volume-initialize
+    volume-initialize     = var.container_volume_initialize
 }
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Database CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -232,6 +238,12 @@ module "file_gen_etc_hosts" {
     domain_name = var.domain_name
 }
 
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JOOMLA CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+module "file_gen_joomla_initialize_sh" {
+    source = "./file_gen_joomla_php_ini"
+    joomla_max_package_size = var.joomla_max_package_size
+}
+
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Security Grp.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -278,39 +290,27 @@ resource "aws_instance" "my_instance" {
     key_name        = "AccessKey"
 
     # Copy some files into the EC2
+//####################################################################################
+    //Provisioning Database configuration files
     provisioner "file" {
         source      = "./james-database.properties"
         destination = "/${var.home-directory}james-database.properties"
     }
 
     provisioner "file" {
-        source      = "./compose.yml"
-        destination = "/${var.home-directory}compose.yml"
-    }
-
-    provisioner "file" {
         source      = "./jdbc.jar"
         destination = "/${var.home-directory}jdbc.jar"
     }
-
-    provisioner "file" {
-        source      = "./james_keystore_with_ssl_certificate_do_not_delete"
-        destination = "/${var.home-directory}keystore"
-    }
-
     provisioner "file" {
         source      = "./database_init.sql"
         destination = "/${var.home-directory}database_init.sql"
     }
 
+    //####################################################################################
+    //Provisioning James Mail Server configuration files
     provisioner "file" {
-        source      = "./nginx.conf"
-        destination = "/${var.home-directory}nginx.conf"
-    }
-
-    provisioner "file" {
-        source      = "./hosts"
-        destination = "/${var.home-directory}hosts"
+        source      = "./james_keystore_with_ssl_certificate_do_not_delete"
+        destination = "/${var.home-directory}keystore"
     }
 
     provisioner "file" {
@@ -324,15 +324,16 @@ resource "aws_instance" "my_instance" {
     }
 
     provisioner "file" {
-        source      = "./james_initialize.sh"
-        destination = "/${var.home-directory}james_initialize.sh"
-    }
-
-    provisioner "file" {
         source      = "./mailetcontainer.xml"
         destination = "/${var.home-directory}mailetcontainer.xml"
     }
 
+    provisioner "file" {
+        source      = "./james_initialize.sh"
+        destination = "/${var.home-directory}james_initialize.sh"
+    }
+//####################################################################################
+    //Provisioning SuiteCRM configuration files
     provisioner "file" {
         source      = "./crm_initialize.sh"
         destination = "/${var.home-directory}crm_initialize.sh"
@@ -352,6 +353,35 @@ resource "aws_instance" "my_instance" {
         source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_private_key.key"
         destination = "/${var.home-directory}crm_https_ssl_private_key.key"
     }
+//####################################################################################
+    //Provisioning Nginx configuration files
+    provisioner "file" {
+        source      = "./nginx.conf"
+        destination = "/${var.home-directory}nginx.conf"
+    }
+
+    provisioner "file" {
+        source      = "./hosts"
+        destination = "/${var.home-directory}hosts"
+    }
+//####################################################################################
+    //Provisioning Joomla configuration files
+    provisioner "file" {
+        source = "./php.ini"
+        destination = "/${var.home-directory}php.ini"
+    }
+
+//####################################################################################
+    //Provisioning the docker-compose.yml file
+    provisioner "file" {
+        source      = "./compose.yml"
+        destination = "/${var.home-directory}compose.yml"
+    }
+
+    //####################################################################################
+    //####################################################################################
+    //####################################################################################
+    //EC2  User Data
 
     user_data = <<-EOF
         #!/bin/bash
@@ -378,20 +408,54 @@ resource "aws_instance" "my_instance" {
         sudo mkdir ${var.home-directory}bucket/
         sudo mount-s3 ${var.james_s3_bucket_name} ${var.home-directory}bucket/
 
-        #Make a directory to mount all of the volumes in it.
+        #Make a directory to mount the containers volumes in it.
         sudo mkdir ${var.home-directory}volumes/
 
-        # Wait for the device to be available
+        #****The sub-project of saving images in the EBS volume will be postponed for now. This command is unused.
+        #Make a directory to mount the docker images volumes in it.
+        #****sudo mkdir ${var.home-directory}docker_images/
+
+        # Wait for the containers volume to be available
         while [ ! -e /dev/xvdf ]; do
           echo "Waiting for /dev/xvdf to be available..."
           sleep 5
         done
 
-        #format the attached EBS volume only if variable "volume-initialize" is set to true
-        ${!var.volume-initialize ? "#": ""} sudo mkfs -t ext4 /dev/xvdf
+        #****The sub-project of saving images in the EBS volume will be postponed for now. This command is unused.
+        # Wait for the docker images volume to be available
+        #****while [ ! -e /dev/xvdd ]; do
+        #****  echo "Waiting for /dev/xvdd to be available..."
+        #****  sleep 5
+        #****done
 
-        # mount the EBS volume into the EC2
+        #format the attached EBS volume only if variable "container_volume_initialize" is set to true
+        ${!var.container_volume_initialize ? "#": ""} sudo mkfs -t ext4 /dev/xvdf
+
+        #****The sub-project of saving images in the EBS volume will be postponed for now. This command is unused.
+        #format the images_volume only if variable "refresh_docker_images" is set to true
+        #**** $ { !var .  refresh_docker_images ? "#": ""} sudo mkfs -t ext4 /dev/xvdd
+
+        # mount the EBS volume for containers persistance into the EC2 folder /home/ec2-user/volumes/
         sudo mount /dev/xvdf ${var.home-directory}volumes/
+
+        #The sub-project of saving images in the EBS volume will be postponed for now. This command is unused.
+        # mount the EBS volume for docker images into the EC2 folder /home/ec2-user/docker_images/
+        #****sudo mount /dev/xvdd ${var.home-directory}docker_images/
+
+
+        #The sub-project of saving images in the EBS volume will be postponed for now. These commands are unused.
+        # Swap the docker images volume to /var/lib/docker
+        #****systemctl stop docker
+        #****systemctl enable docker
+        #If the variable "container_volume_initialize" is set to true, then we need to move the docker images to volume.
+        #**** $ { !var.refresh_docker_images ? "#": ""} sudo mv /var/lib/docker ${var.home-directory}docker_images/
+
+        #If "container_volume_initialize" the folder will be deleted by previous command. but if not, we should delete it.
+        #**** $ { var.refresh_docker_images ? "#": ""} rm -rf /var/lib/docker
+        #****ln -s ${var.home-directory}docker_images/ /var/lib/docker
+        #****systemctl start docker
+
+
 
         #Copy the file hosts to /etc/hosts. This requires SUDO access therefore could not be done via provisioning.
         sudo cp ${var.home-directory}hosts /etc/hosts
@@ -401,11 +465,11 @@ resource "aws_instance" "my_instance" {
         #Follwing volumes are needed
             # mariadb
             # james
-            # certbot-etc
-            # certbot-var
-        ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.db_volume}/
-        ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
-        ${!var.volume-initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.joomla_volume}/
+            # joomla
+            # crm
+        ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.db_volume}/
+        ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
+        ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.joomla_volume}/
 
         #To avoid an error, first one should make the folder for database persistant data before give the ownership to mysql.
         #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
@@ -417,16 +481,16 @@ resource "aws_instance" "my_instance" {
 
         #Inform the user that you are waiting for the containers to be up and running
         #The following initializers will be executed only if the server is being initialized.
-        ${!var.volume-initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
-        ${!var.volume-initialize ? "#": ""}sleep 60
+        ${!var.container_volume_initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
+        ${!var.container_volume_initialize ? "#": ""}sleep 60
 
         # Changing the ownership of the database initializers file and execing it.
-        ${!var.volume-initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh
-        ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}crm_initialize.sh
+        ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh
+        ${!var.container_volume_initialize ? "#": ""}sudo bash ${var.home-directory}crm_initialize.sh
 
         # Changing the ownership of the james initializers file and execing it.
-        ${!var.volume-initialize ? "#": ""}sudo chmod +x ${var.home-directory}james_initialize.sh
-        ${!var.volume-initialize ? "#": ""}sudo bash ${var.home-directory}james_initialize.sh
+        ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}james_initialize.sh
+        ${!var.container_volume_initialize ? "#": ""}sudo bash ${var.home-directory}james_initialize.sh
 
         echo "Thusia server setup cmpleted."
     EOF
@@ -434,12 +498,19 @@ resource "aws_instance" "my_instance" {
 
 resource "aws_volume_attachment" "Thusia_data" {
   device_name = "/dev/sdf"  # The device name you want to use (e.g., /dev/sdf)
-  volume_id   = var.volume-id  # Replace with your EBS volume ID
+  volume_id   = var.containers_volume_id  # Replace with your EBS volume ID
   instance_id = aws_instance.my_instance.id
-
   # Ensure that the attachment waits for the instance to be ready.
   depends_on = [aws_instance.my_instance]
 }
+
+#****resource "aws_volume_attachment" "Docker_images" {
+#****    device_name = "/dev/sdd"  # The device name you want to use (e.g., /dev/sdf)
+#****    volume_id   = var.docker_images_volume_id  # Replace with your EBS volume ID
+#****    instance_id = aws_instance.my_instance.id
+#****    # Ensure that the attachment waits for the instance to be ready.
+#****    depends_on = [aws_instance.my_instance]
+#****}
 
 resource "aws_eip_association" "eip_assoc" {
   instance_id = aws_instance.my_instance.id

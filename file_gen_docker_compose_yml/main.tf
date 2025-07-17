@@ -140,6 +140,7 @@ services:
       JOOMLA_ADMIN_EMAIL: joomla@awin.dk
     volumes:
       - ${var.home-directory}volumes/${var.joomla_volume}:/var/www/html
+      - ${var.home-directory}php.ini:/usr/local/etc/php/php.ini
     networks:
       - ${var.docker-network}
     depends_on:
