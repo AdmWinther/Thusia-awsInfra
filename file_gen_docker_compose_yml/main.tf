@@ -132,12 +132,6 @@ services:
     environment:
       JOOMLA_DB_HOST: ${var.db-container-name}
       JOOMLA_DB_USER: ${var.joomla_db_username}
-      JOOMLA_DB_PASSWORD: ${var.joomla_db_password}
-      JOOMLA_DB_NAME: ${var.joomla_db_name}
-      JOOMLA_ADMIN_USER: Joomla_Admin
-      JOOMLA_ADMIN_USERNAME: admin
-      JOOMLA_ADMIN_PASSWORD: admin
-      JOOMLA_ADMIN_EMAIL: joomla@awin.dk
     volumes:
       - ${var.home-directory}volumes/${var.joomla_volume}:/var/www/html
       - ${var.home-directory}php.ini:/usr/local/etc/php/php.ini

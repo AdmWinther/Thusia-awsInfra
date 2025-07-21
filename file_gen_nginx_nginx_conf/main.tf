@@ -37,6 +37,9 @@ http{
       listen 80;
       server_name ${var.domain_name};
 
+      # The following line allow the uploading of large files in Joomla.
+      client_max_body_size 100M;
+
       location / {
           proxy_pass http://${var.my_ip_address}:${var.joomla_web_port_On_host}; # Use the host computer's IP address
           proxy_set_header Host $host;
@@ -49,6 +52,9 @@ http{
   server {
       listen 80;
       server_name www.${var.domain_name};
+
+      # The following line allow the uploading of large files in Joomla.
+      client_max_body_size 100M;
 
       location / {
           proxy_pass http://${var.my_ip_address}:${var.joomla_web_port_On_host}; # Use the host computer's IP address
