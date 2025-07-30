@@ -33,6 +33,7 @@ variable "joomla_db_password" {}
 variable "joomla-container-name" {}
 variable "joomla-docker-image" {}
 variable "joomla_volume" {}
+variable "joomla_web_port_on_host" {}
 
 #EBC volume related variables
 variable "volume-initialize" {
@@ -128,13 +129,22 @@ services:
     image: ${var.joomla-docker-image}
     container_name: ${var.joomla-container-name}
     ports:
-      - "8081:80"
+      # We need 8081 for the web-API of Joomla
+      - "${var.joomla_web_port_on_host}:80"
     environment:
       JOOMLA_DB_HOST: ${var.db-container-name}
       JOOMLA_DB_USER: ${var.joomla_db_username}
+      JOOMLA_DB_PASSWORD: ${var.joomla_db_password}
+      JOOMLA_DB_NAME: ${var.joomla_db_name}
+      JOOMLA_ADMIN_USER: Joomla_Admin
+      JOOMLA_ADMIN_USERNAME: admwinther
+      JOOMLA_ADMIN_PASSWORD: admin
+      JOOMLA_ADMIN_EMAIL: joomla@awin.dk
     volumes:
       - ${var.home-directory}volumes/${var.joomla_volume}:/var/www/html
       - ${var.home-directory}php.ini:/usr/local/etc/php/php.ini
+      # - ${var.home-directory}configuration.php:/var/www/html/configuration.php
+      # - ${var.home-directory}.htaccess:/var/www/html/.htaccess
     networks:
       - ${var.docker-network}
     depends_on:
@@ -147,12 +157,18 @@ services:
       container_name: ${var.nginx-container-name}
       volumes:
           - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
-          - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/ssl-certificate.crt
-          - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/ssl_certificate_key.key
-          - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/ssl_ca_certificate.crt
+          - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/crm_ssl-certificate.crt
+          - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/crm_ssl_certificate_key.key
+          - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/crm_ssl_ca_certificate.crt
+
+
+          - ${var.home-directory}joomla_https_ssl_fullchain.crt:/etc/nginx/joomla_https_ssl_fullchain.crt
+          - ${var.home-directory}joomla_https_ssl_private_key.key:/etc/nginx/joomla_ssl_certificate_key.key
       networks:
           - ${var.docker-network}
       ports:
+          #NGINX must be in control of the ports 80 and 443.
+          #If traffic from other containers should be redirected to port 80 or 443, then the nginx.conf file must be edited.
           - "80:80"
           - "443:443"
       depends_on:

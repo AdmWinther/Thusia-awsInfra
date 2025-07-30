@@ -1,6 +1,8 @@
+variable "admin_password" {}
 variable "awin_password" {}
 variable "crm_password" {}
 variable "joomla_password" {}
+variable "api_joomla_password" {}
 variable "jpo_password" {}
 variable "fbl_password" {}
 variable "dmarc_reports_password" {}
@@ -15,6 +17,7 @@ resource "local_file" "james_initialize_sh" {
   content = replace(<<EOF
 echo "Initializing James server..."
 docker exec james bash -c "james-cli AddDomain awin.dk"
+docker exec james bash -c "james-cli AddUser admin@awin.dk ${var.admin_password}"
 docker exec james bash -c "james-cli AddUser awin@awin.dk ${var.awin_password}"
 docker exec james bash -c "james-cli AddUser crm@awin.dk ${var.crm_password}"
 
@@ -22,6 +25,7 @@ docker exec james bash -c "james-cli AddUser jpo@awin.dk ${var.jpo_password}"
 docker exec james bash -c "james-cli AddUser dmarc-reports@awin.dk ${var.dmarc_reports_password}"
 docker exec james bash -c "james-cli AddUser fbl@awin.dk ${var.fbl_password}"
 docker exec james bash -c "james-cli AddUser joomla@awin.dk ${var.joomla_password}"
+docker exec james bash -c "james-cli AddUser api_joomla@awin.dk ${var.api_joomla_password}"
 
 docker exec james bash -c "james-cli AddUser john@awin.dk ${var.john_password}"
 docker exec james bash -c "james-cli AddUser jane@awin.dk ${var.jane_password}"

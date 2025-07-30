@@ -46,9 +46,11 @@ variable "aws_ses_smtp_relay_username" {}
 variable "aws_ses_smtp_relay_password" {}
 
 #Test and Demo emails password
+variable "admin_password" {}
 variable "awin_password" {}
 variable "crm_password" {}
 variable "joomla_password" {}
+variable "api_joomla_password" {}
 variable "jpo_password" {}
 variable "fbl_password" {}
 variable "dmarc_reports_password" {}
@@ -151,6 +153,7 @@ module "file_gen_docker_compose_yml" {
     joomla_db_username     = var.joomla_db_username
     joomla_db_password     = var.joomla_db_password
     joomla_volume          = var.joomla_volume
+    joomla_web_port_on_host = var.joomla_web_port_On_host
 
     volume-initialize     = var.container_volume_initialize
 }
@@ -193,9 +196,11 @@ module "file_gen_james_database_properties" {
 
 module "file_gen_james_initialize_sh" {
     source = "./file_gen_james_initialize_sh"
+    admin_password          = var.admin_password
     awin_password           = var.awin_password
     jpo_password            = var.jpo_password
     joomla_password         = var.joomla_password
+    api_joomla_password     = var.api_joomla_password
     fbl_password            = var.fbl_password
     dmarc_reports_password  = var.dmarc_reports_password
 
@@ -229,6 +234,7 @@ module "file_gen_nginx_conf" {
     source = "./file_gen_nginx_nginx_conf"
     my_ip_address = var.my_ip_address
     crm_web_port_On_host = var.crm_web_port_On_host
+    joomla-container-name = var.joomla-container-name
     joomla_web_port_On_host = var.joomla_web_port_On_host
     domain_name = var.domain_name
 }
@@ -239,11 +245,24 @@ module "file_gen_etc_hosts" {
 }
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JOOMLA CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-module "file_gen_joomla_initialize_sh" {
+module "file_gen_joomla_php_ini" {
     source = "./file_gen_joomla_php_ini"
     joomla_max_package_size = var.joomla_max_package_size
 }
 
+module "file_gen_joomla_dot_htaccess" {
+    source = "./file_gen_joomla_dot_htaccess"
+}
+
+# We do not create/provision configuration.php file to the container. we just need to edit the file after it is created by Joomla.
+# module "file_gen_joomla_configuration_php" {
+#     source = "./file_gen_joomla_configuration_php"
+#     domain_name = var.domain_name
+#     db-container-name = var.db-container-name
+#     joomla_db_name = var.joomla_db_name
+#     joomla_db_username = var.joomla_db_username
+#     joomla_db_password = var.joomla_db_password
+# }
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Security Grp.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -305,9 +324,10 @@ resource "aws_instance" "my_instance" {
         source      = "./database_init.sql"
         destination = "/${var.home-directory}database_init.sql"
     }
-
     //####################################################################################
-    //Provisioning James Mail Server configuration files
+    //###################  Provisioning James Mail Server configuration files  ###########
+    //####################################################################################
+
     provisioner "file" {
         source      = "./james_keystore_with_ssl_certificate_do_not_delete"
         destination = "/${var.home-directory}keystore"
@@ -332,8 +352,9 @@ resource "aws_instance" "my_instance" {
         source      = "./james_initialize.sh"
         destination = "/${var.home-directory}james_initialize.sh"
     }
-//####################################################################################
-    //Provisioning SuiteCRM configuration files
+    //####################################################################################
+    //#####################  Provisioning SuiteCRM configuration files  ##################
+    //####################################################################################
     provisioner "file" {
         source      = "./crm_initialize.sh"
         destination = "/${var.home-directory}crm_initialize.sh"
@@ -353,8 +374,10 @@ resource "aws_instance" "my_instance" {
         source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_private_key.key"
         destination = "/${var.home-directory}crm_https_ssl_private_key.key"
     }
-//####################################################################################
-    //Provisioning Nginx configuration files
+    //####################################################################################
+    //#####################  Provisioning Nginx configuration files  #####################
+    //####################################################################################
+
     provisioner "file" {
         source      = "./nginx.conf"
         destination = "/${var.home-directory}nginx.conf"
@@ -364,15 +387,34 @@ resource "aws_instance" "my_instance" {
         source      = "./hosts"
         destination = "/${var.home-directory}hosts"
     }
-//####################################################################################
-    //Provisioning Joomla configuration files
+    //####################################################################################
+    //#####################  Provisioning Joomla configuration files  #####################
+    //####################################################################################
     provisioner "file" {
         source = "./php.ini"
         destination = "/${var.home-directory}php.ini"
     }
 
-//####################################################################################
-    //Provisioning the docker-compose.yml file
+    provisioner "file" {
+        source = "./.htaccess"
+        destination = "/${var.home-directory}.htaccess"
+    }
+
+    provisioner "file" {
+        source      = "./SSL-certificates/awin.dk_and_www.awin.dk/joomla_https_ssl_fullchain.crt"
+        destination = "/${var.home-directory}joomla_https_ssl_fullchain.crt"
+    }
+
+    provisioner "file" {
+        source = "./SSL-certificates/awin.dk_and_www.awin.dk/joomla_https_ssl_private_key.key"
+        destination = "/${var.home-directory}joomla_https_ssl_private_key.key"
+    }
+
+
+    //####################################################################################
+    //#####################  Provisioning the docker-compose.yml file  ###################
+    //####################################################################################
+
     provisioner "file" {
         source      = "./compose.yml"
         destination = "/${var.home-directory}compose.yml"
@@ -471,6 +513,10 @@ resource "aws_instance" "my_instance" {
         ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
         ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.joomla_volume}/
 
+
+        #copying the .htaccess and configuration.php file to the joomla volume. Only if it is server initialization mode.
+        ${!var.container_volume_initialize ? "#": ""} sudo cp ${var.home-directory}.htaccess ${var.home-directory}/volumes/${var.joomla_volume}/.htaccess
+
         #To avoid an error, first one should make the folder for database persistant data before give the ownership to mysql.
         #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
         sudo chown -R 999:999 ${var.home-directory}volumes/${var.db_volume}/
@@ -482,7 +528,7 @@ resource "aws_instance" "my_instance" {
         #Inform the user that you are waiting for the containers to be up and running
         #The following initializers will be executed only if the server is being initialized.
         ${!var.container_volume_initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
-        ${!var.container_volume_initialize ? "#": ""}sleep 180
+        ${!var.container_volume_initialize ? "#": ""}sleep 30
 
         # Changing the ownership of the database initializers file and execing it.
         ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh

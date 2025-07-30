@@ -1,6 +1,10 @@
 <h1>1. NGINX setup</h1>
 
-<h2>1.01</h2>
+<h2>1.01 Note:</h2>
+In nginx.conf file, we can directly address the containers.
+For example, if we want to redirect, http:// 
+
+
 <h2>1.02</h2>
 <h2>1.03</h2>
 <h2>1.04</h2>
