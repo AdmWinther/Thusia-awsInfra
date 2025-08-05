@@ -1,0 +1,51 @@
+<div class="row justify-content-center">
+    <div class="col-lg-4">
+        <h1>Sign up</h1>
+        <form id="signupForm">
+            <div class="mb-3">
+                <label class="required form-label">Email id: *</label>
+                <input class="form-control validate-username required valid form-control-success" name="emailAddress" type="text" aria-label="emailAddress" aria-required="true">
+            </div>
+        </form>
+    </div>
+</div>
+<p>
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async function (e) {
+          e.preventDefault(); // prevent form from doing a traditional submit
+
+          const form = e.target;
+
+          const data = {
+            firstName: form.firstName.value.trim(),
+            lastName: form.lastName.value.trim(),
+            emailAddress: form.emailAddress.value.trim(),
+            password: form.password.value.trim()
+          };
+          console.log(data)
+          try {
+            const response = await fetch('http://localhost:8080/signup', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Origin': 'https://www.awin.dk'  // if needed for CORS
+              },
+              body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              // Server responded with an error status, but gave JSON message
+              throw new Error(result.message || `Server error: ${response.status}`);
+            }
+
+            console.log('Success:', result);
+            alert('Signup successful!\n' + (result.message || ''));
+          } catch (err) {
+            console.error(err);
+            alert('Signup failed:\n' + err.message);
+          }
+        });
+    </script>
+</p>

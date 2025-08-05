@@ -418,3 +418,8 @@ docker run --rm --name joomla -p 8081:80 -e JOOMLA_DB_HOST=mariadb -e JOOMLA_DB_
     -e JOOMLA_ADMIN_USERNAME=admin -e JOOMLA_ADMIN_PASSWORD=admin -e  JOOMLA_ADMIN_EMAIL=joomla@awin.dk --network
     thusia_my-docker-network -d joomla:5.3.2-php8.3-apache
 ```
+
+<h1>How to remove a direcory</h1>
+To remove a directory, you can use the following command:
+```rm -rf /path/to/directory
+```
