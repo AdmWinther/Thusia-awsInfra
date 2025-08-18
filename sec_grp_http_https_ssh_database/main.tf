@@ -50,6 +50,14 @@ resource "aws_security_group" "http_https_ssh_database" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # For wordpress web server, we need to allow port 80 but since it is taken, we map it to 8082
+  ingress {
+      from_port   = 8082
+      to_port     = 8082
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+  }
+
   ingress {
     from_port   = var.crm_web_port_On_host
     to_port     = var.crm_web_port_On_host

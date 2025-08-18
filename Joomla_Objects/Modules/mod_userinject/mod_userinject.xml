@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="module" version="3.0" client="site" method="upgrade">
+    <name>mod_userinject</name>
+    <author>Adam Winther</author>
+    <version>1.0.0</version>
+    <description>Injects Joomla username into JavaScript</description>
+    <files>
+        <filename module="mod_userinject">mod_userinject.php</filename>
+        <filename>helper.php</filename>
+    </files>
+</extension>

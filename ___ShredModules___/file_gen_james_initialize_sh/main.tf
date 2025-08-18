@@ -2,6 +2,7 @@ variable "admin_password" {}
 variable "awin_password" {}
 variable "crm_password" {}
 variable "joomla_password" {}
+variable "wordpress_password" {}
 variable "api_joomla_password" {}
 variable "jpo_password" {}
 variable "fbl_password" {}
@@ -25,6 +26,7 @@ docker exec james bash -c "james-cli AddUser jpo@awin.dk ${var.jpo_password}"
 docker exec james bash -c "james-cli AddUser dmarc-reports@awin.dk ${var.dmarc_reports_password}"
 docker exec james bash -c "james-cli AddUser fbl@awin.dk ${var.fbl_password}"
 docker exec james bash -c "james-cli AddUser joomla@awin.dk ${var.joomla_password}"
+docker exec james bash -c "james-cli AddUser wordpress@awin.dk ${var.wordpress_password}"
 docker exec james bash -c "james-cli AddUser api_joomla@awin.dk ${var.api_joomla_password}"
 
 docker exec james bash -c "james-cli AddUser john@awin.dk ${var.john_password}"

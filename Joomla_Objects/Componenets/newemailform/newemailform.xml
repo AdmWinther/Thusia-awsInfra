@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" version="4.0" method="upgrade">
+    <name>New Email Form</name>
+    <creationDate>August 2025</creationDate>
+    <author>Adam Winther</author>
+    <authorEmail>admwinther@gmail.com</authorEmail>
+    <version>0.0.1</version>
+    <description>New Email Form Component</description>
+<!--    <files>-->
+<!--        <folder>site</folder>-->
+<!--        <folder>admin</folder>-->
+<!--    </files>-->
+    <files folder="site">
+        <filename>index.html</filename>
+        <filename>newemailform.php</filename>
+        <filename>controller.php</filename>
+        <folder>views</folder>
+    </files>
+
+    <administration>
+        <files folder="admin">
+            <!-- Admin Main File Copy Section -->
+            <filename>index.html</filename>
+            <filename>controller.php</filename>
+            <filename>newemailform.php</filename>
+            <!-- SQL files section -->
+            <!--        <folder>sql</folder>-->
+        </files>
+
+        <menu>Bingo New Email Form!</menu>
+    </administration>
+</extension>

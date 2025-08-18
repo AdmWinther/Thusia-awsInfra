@@ -35,6 +35,14 @@ variable "joomla-docker-image" {}
 variable "joomla_volume" {}
 variable "joomla_web_port_on_host" {}
 
+#Wordpress related variables
+variable "wordpress-docker-image" {}
+variable "wordpress-container-name" {}
+variable "wordpress_volume" {}
+variable "wordpress_db_name" {}
+variable "wordpress_db_username" {}
+variable "wordpress_db_password" {}
+
 #EBC volume related variables
 variable "volume-initialize" {
   type = bool
@@ -47,7 +55,6 @@ resource "local_file" "docker_compose_yml" {
 name: Thusia
 
 services:
-
   mariadb:
     image: ${var.db-docker-image}
     container_name: ${var.db-container-name}
@@ -162,8 +169,8 @@ services:
           - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/crm_ssl_ca_certificate.crt
 
 
-          - ${var.home-directory}joomla_https_ssl_fullchain.crt:/etc/nginx/joomla_https_ssl_fullchain.crt
-          - ${var.home-directory}joomla_https_ssl_private_key.key:/etc/nginx/joomla_ssl_certificate_key.key
+          - ${var.home-directory}www_https_ssl_fullchain.crt:/etc/nginx/www_https_ssl_fullchain.crt
+          - ${var.home-directory}www_https_ssl_private_key.key:/etc/nginx/www_ssl_certificate_key.key
       networks:
           - ${var.docker-network}
       ports:

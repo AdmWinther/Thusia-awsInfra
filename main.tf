@@ -51,6 +51,7 @@ variable "awin_password" {}
 variable "crm_password" {}
 variable "joomla_password" {}
 variable "api_joomla_password" {}
+variable "wordpress_password" {}
 variable "jpo_password" {}
 variable "fbl_password" {}
 variable "dmarc_reports_password" {}
@@ -63,7 +64,7 @@ variable "demo_password" {}
 #CRM related variables
 variable "crm-container-name" {}
 variable "crm-docker-image" {}
-variable "crm_web_port_On_host" {}
+variable "crm_https_port_of_container" {}
 variable "crm-db-name" {}
 variable "crm-db-username" {}
 variable "crm-db-password" {}
@@ -91,6 +92,13 @@ variable "joomla_volume" {}
 variable "joomla_web_port_On_host" {}
 variable "joomla_max_package_size" {}
 
+#Wordpress related variables
+variable "wordpress-container-name" {}
+variable "wordpress-docker-image" {}
+variable "wordpress_db_name" {}
+variable "wordpress_db_username" {}
+variable "wordpress_db_password" {}
+variable "wordpress_volume" {}
 
 #AWS-EC2 related variables
 variable "ec2-ami" {}
@@ -121,7 +129,7 @@ variable "domain_name" {}
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    DOCKER COMPOSE file gen.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_docker_compose_yml" {
-    source                = "./file_gen_docker_compose_yml"
+    source                = "./___ShredModules___/file_gen_docker_compose_yml"
 
     home-directory        = var.home-directory
     docker-network        = var.docker-network
@@ -155,12 +163,19 @@ module "file_gen_docker_compose_yml" {
     joomla_volume          = var.joomla_volume
     joomla_web_port_on_host = var.joomla_web_port_On_host
 
+    wordpress-container-name = var.wordpress-container-name
+    wordpress-docker-image   = var.wordpress-docker-image
+    wordpress_db_name        = var.wordpress_db_name
+    wordpress_db_username    = var.wordpress_db_username
+    wordpress_db_password    = var.wordpress_db_password
+    wordpress_volume         = var.wordpress_volume
+
     volume-initialize     = var.container_volume_initialize
 }
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Database CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_database_init" {
-    source = "./file_gen_database_init"
+    source = "./___ShredModules___/file_gen_database_init"
     james_db_name = var.james_db_name
     james_db_username = var.james_db_username
     james_db_password = var.james_db_password
@@ -173,6 +188,10 @@ module "file_gen_database_init" {
     joomla_db_username = var.joomla_db_username
     joomla_db_password = var.joomla_db_password
 
+    wordpress_db_name = var.wordpress_db_name
+    wordpress_db_username = var.wordpress_db_username
+    wordpress_db_password = var.wordpress_db_password
+
     rest_api_db_name   = var.rest_api_db_name
     rest_api_db_username   = var.rest_api_db_username
     rest_api_db_password   = var.rest_api_db_password
@@ -180,11 +199,11 @@ module "file_gen_database_init" {
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    SuiteCRM CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_crm_initialize_sh" {
-    source = "./file_gen_crm_initialize_sh"
+    source = "./___ShredModules___/file_gen_crm_initialize_sh"
 }
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JAMES CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_james_database_properties" {
-    source = "./file_gen_james_database_properties"
+    source = "./___ShredModules___/file_gen_james_database_properties"
     db_software           = var.db_software
     db-container-name     = var.db-container-name
     james_db_username           = var.james_db_username
@@ -195,11 +214,12 @@ module "file_gen_james_database_properties" {
 }
 
 module "file_gen_james_initialize_sh" {
-    source = "./file_gen_james_initialize_sh"
+    source = "./___ShredModules___/file_gen_james_initialize_sh"
     admin_password          = var.admin_password
     awin_password           = var.awin_password
     jpo_password            = var.jpo_password
     joomla_password         = var.joomla_password
+    wordpress_password      = var.wordpress_password
     api_joomla_password     = var.api_joomla_password
     fbl_password            = var.fbl_password
     dmarc_reports_password  = var.dmarc_reports_password
@@ -212,15 +232,15 @@ module "file_gen_james_initialize_sh" {
 }
 
 module "file_gen_james_imapserver_xml" {
-    source = "./file_gen_james_imapserver_xml"
+    source = "./___ShredModules___/file_gen_james_imapserver_xml"
 }
 
 module "file_gen_smtpserver_xml" {
-    source = "./file_gen_james_smtpserver_xml"
+    source = "./___ShredModules___/file_gen_james_smtpserver_xml"
 }
 
 module "file_gen_mailetcontainer_xml" {
-    source = "./file_gen_james_mailetcontainer_xml"
+    source = "./___ShredModules___/file_gen_james_mailetcontainer_xml"
 
     aws_ses_mail_relay_address = var.aws_ses_mail_relay_address
     aws_ses_mail_relay_port = var.aws_ses_mail_relay_port
@@ -231,38 +251,28 @@ module "file_gen_mailetcontainer_xml" {
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    NGINX CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_nginx_conf" {
-    source = "./file_gen_nginx_nginx_conf"
-    my_ip_address = var.my_ip_address
-    crm_web_port_On_host = var.crm_web_port_On_host
+    source = "./___ShredModules___/file_gen_nginx_nginx_conf"
+    crm_container_name = var.crm-container-name
+    crm_https_port_of_container = var.crm_https_port_of_container
     joomla-container-name = var.joomla-container-name
-    joomla_web_port_On_host = var.joomla_web_port_On_host
     domain_name = var.domain_name
 }
 
 module "file_gen_etc_hosts" {
-    source = "./file_gen_etc_hosts"
+    source = "./___ShredModules___/file_gen_etc_hosts"
     domain_name = var.domain_name
 }
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JOOMLA CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_joomla_php_ini" {
-    source = "./file_gen_joomla_php_ini"
+    source = "./___ShredModules___/file_gen_joomla_php_ini"
     joomla_max_package_size = var.joomla_max_package_size
 }
 
 module "file_gen_joomla_dot_htaccess" {
-    source = "./file_gen_joomla_dot_htaccess"
+    source = "./___ShredModules___/file_gen_joomla_dot_htaccess"
 }
 
-# We do not create/provision configuration.php file to the container. we just need to edit the file after it is created by Joomla.
-# module "file_gen_joomla_configuration_php" {
-#     source = "./file_gen_joomla_configuration_php"
-#     domain_name = var.domain_name
-#     db-container-name = var.db-container-name
-#     joomla_db_name = var.joomla_db_name
-#     joomla_db_username = var.joomla_db_username
-#     joomla_db_password = var.joomla_db_password
-# }
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Security Grp.    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -270,7 +280,7 @@ module "file_gen_joomla_dot_htaccess" {
 module "sec_grp_http_https_ssh_database" {
     source    = "./sec_grp_http_https_ssh_database"
     my_vpc_id = var.my_vpc_id
-    crm_web_port_On_host = var.crm_web_port_On_host
+    crm_web_port_On_host = var.crm_https_port_of_container
     joomla_web_port_On_host = var.joomla_web_port_On_host
 }
 module "sec_grp_mail_server" {
@@ -401,13 +411,13 @@ resource "aws_instance" "my_instance" {
     }
 
     provisioner "file" {
-        source      = "./SSL-certificates/awin.dk_and_www.awin.dk/joomla_https_ssl_fullchain.crt"
-        destination = "/${var.home-directory}joomla_https_ssl_fullchain.crt"
+        source      = "./SSL-certificates/awin.dk_and_www.awin.dk/www_https_ssl_fullchain.crt"
+        destination = "/${var.home-directory}www_https_ssl_fullchain.crt"
     }
 
     provisioner "file" {
-        source = "./SSL-certificates/awin.dk_and_www.awin.dk/joomla_https_ssl_private_key.key"
-        destination = "/${var.home-directory}joomla_https_ssl_private_key.key"
+        source = "./SSL-certificates/awin.dk_and_www.awin.dk/www_https_ssl_private_key.key"
+        destination = "/${var.home-directory}www_https_ssl_private_key.key"
     }
 
 
@@ -508,10 +518,12 @@ resource "aws_instance" "my_instance" {
             # mariadb
             # james
             # joomla
+            # wordpress
             # crm
         ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.db_volume}/
         ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
         ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.joomla_volume}/
+        ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.wordpress_volume}/
 
 
         #copying the .htaccess and configuration.php file to the joomla volume. Only if it is server initialization mode.

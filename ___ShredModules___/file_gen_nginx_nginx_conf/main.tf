@@ -1,8 +1,9 @@
-variable "my_ip_address" {}
+
 variable "domain_name" {}
-variable "crm_web_port_On_host" {}
+variable "crm_https_port_of_container" {}
+variable "crm_container_name" {}
 variable "joomla-container-name" {}
-variable "joomla_web_port_On_host" {}
+
 
 resource "local_file" "nginx_conf" {
   filename = "nginx.conf"
@@ -34,7 +35,7 @@ http{
       ssl_trusted_certificate /etc/nginx/crm_ssl_ca_certificate.crt;
 
       location / {
-          proxy_pass https://crm.${var.domain_name}:${var.crm_web_port_On_host}; # Use the host computer's IP address
+          proxy_pass https://${var.crm_container_name}:${var.crm_https_port_of_container}; # Use the host computer's IP address
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -68,13 +69,13 @@ http{
       return 301 https://$host$request_uri; # Redirect HTTP to HTTPS
   }
 
-  #To redirect https://www.awin.dk to localhost:8081.
+  #To redirect https://www.awin.dk to joomla container port 80.
   server {
       listen 443;
       server_name www.${var.domain_name};
 
-      ssl_certificate /etc/nginx/joomla_https_ssl_fullchain.crt;
-      ssl_certificate_key /etc/nginx/joomla_ssl_certificate_key.key;
+      ssl_certificate /etc/nginx/www_https_ssl_fullchain.crt;
+      ssl_certificate_key /etc/nginx/www_ssl_certificate_key.key;
 
 
       # The following line allow the uploading of large files in Joomla.

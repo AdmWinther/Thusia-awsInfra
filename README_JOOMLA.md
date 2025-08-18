@@ -47,3 +47,9 @@ To do this, you can use the following command:
 cat joomla_ssl-certificate.crt joomla_ssl_ca_certificate.crt > joomla_ssl_fullchain.crt
 ```
 Then this must be provisioned to the Nginx container and loaded in the Nginx configuration file.
+
+
+<h2>1.7 How include username and token in an api request</h2>
+I had to make a module named "mod_userinject" that injects the username and token into the JS.
+Then put the files in a zip file and install it in Joomla via the Extension Manager.
+Then I could find the module under "Content/Site Modules". Opened it and select a position.
