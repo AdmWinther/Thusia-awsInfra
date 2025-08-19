@@ -3,6 +3,7 @@ variable "domain_name" {}
 variable "crm_https_port_of_container" {}
 variable "crm_container_name" {}
 variable "joomla-container-name" {}
+variable "wordpress_container_name" {}
 
 
 resource "local_file" "nginx_conf" {
@@ -82,7 +83,7 @@ http{
       client_max_body_size 100M;
 
       location / {
-          proxy_pass http://${var.joomla-container-name}:80; # Use the Joomla container name and port
+          proxy_pass http://${var.wordpress_container_name}:80; # Use Wordpress container name and port
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

@@ -255,6 +255,7 @@ module "file_gen_nginx_conf" {
     crm_container_name = var.crm-container-name
     crm_https_port_of_container = var.crm_https_port_of_container
     joomla-container-name = var.joomla-container-name
+    wordpress_container_name = var.wordpress-container-name
     domain_name = var.domain_name
 }
 
@@ -542,13 +543,16 @@ resource "aws_instance" "my_instance" {
         ${!var.container_volume_initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
         ${!var.container_volume_initialize ? "#": ""}sleep 30
 
-        # Changing the ownership of the database initializers file and execing it.
-        ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh
-        ${!var.container_volume_initialize ? "#": ""}sudo bash ${var.home-directory}crm_initialize.sh
-
         # Changing the ownership of the james initializers file and execing it.
         ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}james_initialize.sh
         ${!var.container_volume_initialize ? "#": ""}sudo bash ${var.home-directory}james_initialize.sh
+
+        ${!var.container_volume_initialize ? "#": ""}echo "Waiting another 20 seconds for CRM to load completely."
+        ${!var.container_volume_initialize ? "#": ""}sleep 30
+
+        # Changing the ownership of the database initializers file and execing it.
+        ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh
+        ${!var.container_volume_initialize ? "#": ""}sudo bash ${var.home-directory}crm_initialize.sh
 
         echo "Thusia server setup cmpleted."
     EOF
