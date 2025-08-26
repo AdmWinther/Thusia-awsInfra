@@ -132,49 +132,49 @@ services:
       - mariadb
       - james
 
-  # joomla:
-  #   image: ${var.joomla-docker-image}
-  #   container_name: ${var.joomla-container-name}
-  #   ports:
-  #     # We need 8081 for the web-API of Joomla
-  #     - "${var.joomla_web_port_on_host}:80"
-  #   environment:
-  #     JOOMLA_DB_HOST: ${var.db-container-name}
-  #     JOOMLA_DB_USER: ${var.joomla_db_username}
-  #     JOOMLA_DB_PASSWORD: ${var.joomla_db_password}
-  #     JOOMLA_DB_NAME: ${var.joomla_db_name}
-  #     JOOMLA_ADMIN_USER: Joomla_Admin
-  #     JOOMLA_ADMIN_USERNAME: admwinther
-  #     JOOMLA_ADMIN_PASSWORD: admin
-  #     JOOMLA_ADMIN_EMAIL: joomla@awin.dk
-  #   volumes:
-  #     - ${var.home-directory}volumes/${var.joomla_volume}:/var/www/html
-  #     - ${var.home-directory}php.ini:/usr/local/etc/php/php.ini
-  #     # - ${var.home-directory}configuration.php:/var/www/html/configuration.php
-  #     # - ${var.home-directory}.htaccess:/var/www/html/.htaccess
-  #   networks:
-  #     - ${var.docker-network}
-  #   depends_on:
-  #       - mariadb
-  #       - james
-
-  wordpress:
-    image: ${var.wordpress-docker-image}
-    container_name: ${var.wordpress-container-name}
+  joomla:
+    image: ${var.joomla-docker-image}
+    container_name: ${var.joomla-container-name}
     ports:
       # We need 8081 for the web-API of Joomla
-      - "8081:80"
+      - "${var.joomla_web_port_on_host}:80"
     environment:
-      WORDPRESS_DB_HOST: ${var.db-container-name}
-      WORDPRESS_DB_USER: ${var.wordpress_db_username}
-      WORDPRESS_DB_PASSWORD: ${var.wordpress_db_password}
-      WORDPRESS_DB_NAME: ${var.wordpress_db_name}
+      JOOMLA_DB_HOST: ${var.db-container-name}
+      JOOMLA_DB_USER: ${var.joomla_db_username}
+      JOOMLA_DB_PASSWORD: ${var.joomla_db_password}
+      JOOMLA_DB_NAME: ${var.joomla_db_name}
+      JOOMLA_ADMIN_USER: Joomla_Admin
+      JOOMLA_ADMIN_USERNAME: admwinther
+      JOOMLA_ADMIN_PASSWORD: admin
+      JOOMLA_ADMIN_EMAIL: joomla@awin.dk
     volumes:
-      - ${var.home-directory}volumes/wordpress:/var/www/html
+      - ${var.home-directory}volumes/${var.joomla_volume}:/var/www/html
+      - ${var.home-directory}php.ini:/usr/local/etc/php/php.ini
+      # - ${var.home-directory}configuration.php:/var/www/html/configuration.php
+      # - ${var.home-directory}.htaccess:/var/www/html/.htaccess
     networks:
       - ${var.docker-network}
     depends_on:
         - mariadb
+        - james
+
+  # wordpress:
+  #   image: ${var.wordpress-docker-image}
+  #   container_name: ${var.wordpress-container-name}
+  #   ports:
+  #     # We need 8081 for the web-API of Joomla
+  #     - "8081:80"
+  #   environment:
+  #     WORDPRESS_DB_HOST: ${var.db-container-name}
+  #     WORDPRESS_DB_USER: ${var.wordpress_db_username}
+  #     WORDPRESS_DB_PASSWORD: ${var.wordpress_db_password}
+  #     WORDPRESS_DB_NAME: ${var.wordpress_db_name}
+  #   volumes:
+  #     - ${var.home-directory}volumes/wordpress:/var/www/html
+  #   networks:
+  #     - ${var.docker-network}
+  #   depends_on:
+  #       - mariadb
 
 
   ngx:
@@ -198,7 +198,8 @@ services:
           - "443:443"
       depends_on:
           - suitecrm
-          - wordpress
+          - joomla
+          # - wordpress
 
 networks:
   ${var.docker-network}:

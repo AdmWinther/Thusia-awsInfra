@@ -53,3 +53,14 @@ Then this must be provisioned to the Nginx container and loaded in the Nginx con
 I had to make a module named "mod_userinject" that injects the username and token into the JS.
 Then put the files in a zip file and install it in Joomla via the Extension Manager.
 Then I could find the module under "Content/Site Modules". Opened it and select a position.
+
+<h1>2. Automated Joomla Components, and Plugings</h1>
+I am trying to automate the installation of some components and plugins.
+First thing to do after installation is to remove the unnacessary User Groups.
+
+<h2>2.1 Remove Unnacessary User Groups</h2>
+Install the pluging "User Groups Cleanup" from the Joomla Extension Directory. 
+ATTENTION: After installation, you need to enable the plugin from System > Manage > Plugins in order for it to work.
+
+<h2>2.2 Make main menu</h2>
+Install the

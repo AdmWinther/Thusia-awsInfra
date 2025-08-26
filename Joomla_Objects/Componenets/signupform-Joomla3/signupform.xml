@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" version="4.0" method="upgrade" script="script.php">
+    <name>com_signupform</name>
+    <creationDate>August 2025</creationDate>
+    <author>Adam Winther</author>
+    <authorEmail>admwinther@gmail.com</authorEmail>
+    <version>0.0.1</version>
+    <description>Sign Up Form Component</description>
+
+    <files folder="site">
+        <filename>index.html</filename>
+        <filename>signupform.php</filename>
+        <filename>controller.php</filename>
+        <folder>views</folder>
+    </files>
+
+    <administration>
+        <files folder="admin">
+            <filename>index.html</filename>
+            <filename>controller.php</filename>
+            <filename>signupform.php</filename>
+            <folder>views</folder>
+        </files>
+
+        <menu>Signup Form</menu>
+    </administration>
+</extension>

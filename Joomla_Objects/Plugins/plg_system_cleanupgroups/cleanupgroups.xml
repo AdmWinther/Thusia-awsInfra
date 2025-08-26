@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" method="upgrade">
+    <name>plg_system_cleanupgroups</name>
+    <author>Adam Winther</author>
+    <version>1.0</version>
+    <description>Removes unnecessary Joomla user groups on install.</description>
+    <files>
+        <filename plugin="cleanupgroups">cleanupgroups.php</filename>
+    </files>
+</extension>
