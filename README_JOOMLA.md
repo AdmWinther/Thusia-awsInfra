@@ -24,6 +24,12 @@ Then select "Configure" and set the "Archive Format" to "ZIP".
 
 
 <h3>1.3.4 Install SSH certificate for HTTPS</h3>
+UPDATE: Just get a certificate from ZeroSSL and replace it at your local folder. You only need to rename the files.
+Just combine the certificate and the CA certificate into one file named `joomla_ssl_fullchain.crt`.
+```
+cat joomla_ssl-certificate.crt joomla_ssl_ca_certificate.crt > joomla_ssl_fullchain.crt
+```
+__________________________________________________
 I got a certificate from zeroSSL.
 Then I made two modules, one to make the file configuration.php and the other to make .htaccess file.
 At the end of the process, it was just as simple as sending the ssl files to the client via NGINX.

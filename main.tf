@@ -81,6 +81,12 @@ variable "nginx-container-name" {}
 variable "rest_api_db_name" {}
 variable "rest_api_db_username" {}
 variable "rest_api_db_password" {}
+variable "rest_api_port_on_host" {}
+
+variable "rest_api_docker_image" {}
+variable "rest-api-container-name" {
+    type = string
+}
 
 #Joomla  related variables
 variable "joomla_db_name" {}
@@ -162,6 +168,10 @@ module "file_gen_docker_compose_yml" {
     joomla_db_password     = var.joomla_db_password
     joomla_volume          = var.joomla_volume
     joomla_web_port_on_host = var.joomla_web_port_On_host
+
+    rest-api-container-name = var.rest-api-container-name
+    rest_api_docker_image   = var.rest_api_docker_image
+    rest_api_port_on_host   = var.rest_api_port_on_host
 
     wordpress-container-name = var.wordpress-container-name
     wordpress-docker-image   = var.wordpress-docker-image
@@ -283,6 +293,7 @@ module "sec_grp_http_https_ssh_database" {
     my_vpc_id = var.my_vpc_id
     crm_web_port_On_host = var.crm_https_port_of_container
     joomla_web_port_On_host = var.joomla_web_port_On_host
+    rest_api_port_on_host = var.rest_api_port_on_host
 }
 module "sec_grp_mail_server" {
     source    = "./sec_grp_mail_server"
@@ -423,6 +434,10 @@ resource "aws_instance" "my_instance" {
 
 
     //####################################################################################
+    //#####################  Provisioning REST_API container files   #####################
+    //####################################################################################
+    //No files to provision for now. Files will be copied from the S3 bucket directly by the container.
+    //####################################################################################
     //#####################  Provisioning the docker-compose.yml file  ###################
     //####################################################################################
 
@@ -519,12 +534,10 @@ resource "aws_instance" "my_instance" {
             # mariadb
             # james
             # joomla
-            # wordpress
             # crm
         ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.db_volume}/
         ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.crm_volume}/
         ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.joomla_volume}/
-        ${!var.container_volume_initialize ? "#": ""} sudo mkdir ${var.home-directory}volumes/${var.wordpress_volume}/
 
 
         #copying the .htaccess and configuration.php file to the joomla volume. Only if it is server initialization mode.
@@ -534,9 +547,16 @@ resource "aws_instance" "my_instance" {
         #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
         sudo chown -R 999:999 ${var.home-directory}volumes/${var.db_volume}/
 
+        #Build the Rest API docker image
+        sudo -s
+        cd ${var.home-directory}bucket/Rest_API_JARs/
+        docker build -t ${var.rest_api_docker_image} .
+
         #Run the containers
         #It is important to run this command with (-d) to detach, otherwise the rest of the initializers will not execute.
         docker-compose -f ${var.home-directory}compose.yml up -d
+
+        docker run --rm --name ${var.rest-api-container-name} -e spring.profiles.active=prod -p ${var.rest_api_port_on_host}:8080 thusia_rest_api
 
         #Inform the user that you are waiting for the containers to be up and running
         #The following initializers will be executed only if the server is being initialized.

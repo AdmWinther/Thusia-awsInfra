@@ -35,6 +35,12 @@ variable "joomla-docker-image" {}
 variable "joomla_volume" {}
 variable "joomla_web_port_on_host" {}
 
+#Rest API related variables
+variable "rest-api-container-name" {}
+variable "rest_api_docker_image" {}
+variable "rest_api_port_on_host" {}
+
+
 #Wordpress related variables
 variable "wordpress-docker-image" {}
 variable "wordpress-container-name" {}
@@ -158,6 +164,21 @@ services:
         - mariadb
         - james
 
+  rest:
+     image: ${var.rest_api_docker_image}
+     container_name: ${var.rest-api-container-name}
+     ports:
+       - "${var.rest_api_port_on_host}:8080"
+     environment:
+       TEST_ENV_VAR: "TestValue-Terraform-7483"
+  #   volumes:
+  #     - ${var.home-directory}volumes/wordpress:/var/www/html
+     networks:
+       - ${var.docker-network}
+     depends_on:
+         - mariadb
+
+
   # wordpress:
   #   image: ${var.wordpress-docker-image}
   #   container_name: ${var.wordpress-container-name}
@@ -200,6 +221,8 @@ services:
           - suitecrm
           - joomla
           # - wordpress
+
+
 
 networks:
   ${var.docker-network}:

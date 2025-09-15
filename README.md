@@ -352,15 +352,22 @@ First make a self-signed certificate using the following command:
 ```
 keytool -genkey -alias james -keyalg RSA -keystore keystore
 ```
-The Keystore password is james72laBalle. The Keytool will ask some questions. it is important to set the Common Name (CN) to the domain name you are using. In my case, it is mail.awin.dk.
+The Keystore password is james72laBalle. The Keytool will ask some questions. 
+it is important to set the Common Name (CN) to the domain name you are using. In my case, it is mail.awin.dk.
+It is also important to use correct contry code. I used DK for Denmark.
+
+NOTE: You do not need to export the files from James container. You only need to copy a text from certreq.csr file later.
+
 Then we need to make a certificate request (CSR) file. To do this, run this command.
 ```
 keytool -certreq -keyalg RSA -alias james -file certreq.csr -keystore keystore
 ```
 This will generate the file certreq.csr. Then I need to use the CSR file to generate the SSL. I used ZeroSSL. ZeroSSL gives two files. ca_bundle.crt and certificate.crt. we need to load both into keystore.
 Use the following command to load the ca_bundle.crt file into keystore: (ca_bundle.crt is the file that shows how ZeroSSL is trusted)
+
+Copy the files to S3 and from there to your James container. Then run the following commands. (make sure you use correct file names)
 ```
-keytool -import -alias root -keystore keystore -trustcacerts -file ca_certificate.crt
+keytool -import -alias root -keystore your_keystore_filename -trustcacerts -file ca_certificate.crt
 ```
 Then load the certificate.crt file into keystore. This is the file for our server.
 ```
@@ -370,6 +377,8 @@ Now you have SSL certificate for your server. You can check the keystore file us
 
 
 <h2>Enabling HTTPS for suitecrm</h2>
+UPDATE: Just get a certificate from ZeroSSL and replace it at your local folder. You only need to rename the files.
+_____________________________________________________________________
 to do it, I followed the instruction in this page: https://docs.bitnami.com/aws/apps/wordpress/administration/enable-https-ssl-apache/
 The SSL certificates should be copied to the folder:
 

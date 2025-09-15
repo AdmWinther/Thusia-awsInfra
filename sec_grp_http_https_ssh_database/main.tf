@@ -13,6 +13,11 @@ variable "joomla_web_port_On_host" {
   type        = string
 }
 
+variable "rest_api_port_on_host" {
+  description = "The port that the Rest-API server will be accessible on the host machine"
+  type        = string
+}
+
 resource "aws_security_group" "http_https_ssh_database" {
   name        = "http_https_ssh_database_sg"
   description = "Allow SSH and HTTP and HTTPS traffic"
@@ -34,7 +39,7 @@ resource "aws_security_group" "http_https_ssh_database" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-    # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8080
+  # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8080
   ingress {
     from_port   = 8080
     to_port     = 8080
@@ -50,10 +55,10 @@ resource "aws_security_group" "http_https_ssh_database" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # For wordpress web server, we need to allow port 80 but since it is taken, we map it to 8082
+  # For our Rest-API server, we need to allow port 8080 but since it is taken, we map it to 8082
   ingress {
-      from_port   = 8082
-      to_port     = 8082
+      from_port   = var.rest_api_port_on_host    // Port for the REST API server
+      to_port     = var.rest_api_port_on_host
       protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
   }
