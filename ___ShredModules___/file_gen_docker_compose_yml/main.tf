@@ -170,7 +170,8 @@ services:
      ports:
        - "${var.rest_api_port_on_host}:8080"
      environment:
-       TEST_ENV_VAR: "TestValue-Terraform-7483"
+       spring.profiles.active: "prod"
+       TEST_ENV_VAR: "TestValue-Terraform-575458535"
   #   volumes:
   #     - ${var.home-directory}volumes/wordpress:/var/www/html
      networks:
