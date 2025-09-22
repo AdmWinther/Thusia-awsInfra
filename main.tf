@@ -82,6 +82,10 @@ variable "rest_api_db_name" {}
 variable "rest_api_db_username" {}
 variable "rest_api_db_password" {}
 variable "rest_api_port_on_host" {}
+variable "CRM_API_AuthenticationClientId" {}
+variable "CRM_API_AuthenticationClientSecret" {}
+variable "JOOMLA_API_TOKEN"{}
+
 
 variable "rest_api_docker_image" {}
 variable "rest-api-container-name" {
@@ -172,6 +176,9 @@ module "file_gen_docker_compose_yml" {
     rest-api-container-name = var.rest-api-container-name
     rest_api_docker_image   = var.rest_api_docker_image
     rest_api_port_on_host   = var.rest_api_port_on_host
+    CRM_API_AuthenticationClientId = var.CRM_API_AuthenticationClientId
+    CRM_API_AuthenticationClientSecret = var.CRM_API_AuthenticationClientSecret
+    JOOMLA_API_TOKEN = var.JOOMLA_API_TOKEN
 
     wordpress-container-name = var.wordpress-container-name
     wordpress-docker-image   = var.wordpress-docker-image
@@ -265,7 +272,8 @@ module "file_gen_nginx_conf" {
     crm_container_name = var.crm-container-name
     crm_https_port_of_container = var.crm_https_port_of_container
     joomla-container-name = var.joomla-container-name
-    wordpress_container_name = var.wordpress-container-name
+    rest_api_port_on_host = var.rest_api_port_on_host
+    rest-api-container-name = var.rest-api-container-name
     domain_name = var.domain_name
 }
 
@@ -301,8 +309,8 @@ module "sec_grp_mail_server" {
 }
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXX Role, Policy, Profile  XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-module "profile_gen_EC2_full_Access_to_S3" {
-    source = "./profile_gen_EC2FullAccessToS3Bucket"
+module "profile_gen_EC2_full_Access_to_S3_and_SES" {
+    source = "./profile_gen_EC2FullAccessToS3BucketAndSES"
 }
 
 #______________________________        EC2          _____________________________
@@ -324,8 +332,7 @@ resource "aws_instance" "my_instance" {
         Name = "THUSIA-V1"
     }
 
-    # iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
-    iam_instance_profile = module.profile_gen_EC2_full_Access_to_S3.ec2_full_access_to_s3_bucket_profile_name
+    iam_instance_profile = module.profile_gen_EC2_full_Access_to_S3_and_SES.ec2_full_access_to_s3_bucket_and_ses_profile_name
     # Associate the security group with the EC2 instance
     security_groups = [module.sec_grp_http_https_ssh_database.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
     key_name        = "AccessKey"
@@ -436,7 +443,28 @@ resource "aws_instance" "my_instance" {
     //####################################################################################
     //#####################  Provisioning REST_API container files   #####################
     //####################################################################################
-    //No files to provision for now. Files will be copied from the S3 bucket directly by the container.
+
+    provisioner "file" {
+        source      = "./SSL-certificates/api.awin.dk/api_https_ssl_certificate.crt"
+        destination = "/${var.home-directory}api_https_ssl_certificate.crt"
+    }
+
+    provisioner "file" {
+        source      = "./SSL-certificates/api.awin.dk/api_https_ssl_chain_certificate.crt"
+        destination = "/${var.home-directory}api_https_ssl_chain_certificate.crt"
+    }
+
+    provisioner "file" {
+        source      = "./SSL-certificates/api.awin.dk/api_https_ssl_fullchain.crt"
+        destination = "/${var.home-directory}api_https_ssl_fullchain.crt"
+    }
+
+    provisioner "file" {
+        source = "./SSL-certificates/api.awin.dk/api_https_ssl_private_key.key"
+        destination = "/${var.home-directory}api_https_ssl_private_key.key"
+    }
+
+
     //####################################################################################
     //#####################  Provisioning the docker-compose.yml file  ###################
     //####################################################################################
@@ -555,8 +583,6 @@ resource "aws_instance" "my_instance" {
         #Run the containers
         #It is important to run this command with (-d) to detach, otherwise the rest of the initializers will not execute.
         docker-compose -f ${var.home-directory}compose.yml up -d
-
-        docker run --rm --name ${var.rest-api-container-name} -e spring.profiles.active=prod -p ${var.rest_api_port_on_host}:8080 thusia_rest_api
 
         #Inform the user that you are waiting for the containers to be up and running
         #The following initializers will be executed only if the server is being initialized.

@@ -39,7 +39,9 @@ variable "joomla_web_port_on_host" {}
 variable "rest-api-container-name" {}
 variable "rest_api_docker_image" {}
 variable "rest_api_port_on_host" {}
-
+variable "CRM_API_AuthenticationClientId" {}
+variable "CRM_API_AuthenticationClientSecret" {}
+variable "JOOMLA_API_TOKEN" {}
 
 #Wordpress related variables
 variable "wordpress-docker-image" {}
@@ -172,6 +174,9 @@ services:
      environment:
        spring.profiles.active: "prod"
        TEST_ENV_VAR: "TestValue-Terraform-575458535"
+       CRM_API_AuthenticationClientId: ${var.CRM_API_AuthenticationClientId}
+       CRM_API_AuthenticationClientSecret: ${var.CRM_API_AuthenticationClientSecret}
+       JOOMLA_API_TOKEN: ${var.JOOMLA_API_TOKEN}
   #   volumes:
   #     - ${var.home-directory}volumes/wordpress:/var/www/html
      networks:
@@ -204,6 +209,7 @@ services:
       container_name: ${var.nginx-container-name}
       volumes:
           - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
+
           - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/crm_ssl-certificate.crt
           - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/crm_ssl_certificate_key.key
           - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/crm_ssl_ca_certificate.crt
@@ -211,6 +217,11 @@ services:
 
           - ${var.home-directory}www_https_ssl_fullchain.crt:/etc/nginx/www_https_ssl_fullchain.crt
           - ${var.home-directory}www_https_ssl_private_key.key:/etc/nginx/www_ssl_certificate_key.key
+
+          - ${var.home-directory}api_https_ssl_certificate.crt:/etc/nginx/api_https_ssl_certificate.crt
+          - ${var.home-directory}api_https_ssl_private_key.key:/etc/nginx/api_https_ssl_private_key.key
+          - ${var.home-directory}api_https_ssl_fullchain.crt:/etc/nginx/api_https_ssl_fullchain.crt
+          - ${var.home-directory}api_https_ssl_chain_certificate.crt:/etc/nginx/api_https_ssl_chain_certificate.crt
       networks:
           - ${var.docker-network}
       ports:

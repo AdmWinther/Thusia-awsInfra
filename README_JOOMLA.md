@@ -70,3 +70,13 @@ ATTENTION: After installation, you need to enable the plugin from System > Manag
 
 <h2>2.2 Make main menu</h2>
 Install the
+
+<h2>2.3 Communicating with REST API via HTTPS</h2>
+After switching to HTTPS, I faced a problem with Joomla. It throws the following error:
+```"error":"SSL certificate problem: unable to get local issuer certificate"
+```
+I made a full chain certificate and loaded it in NGINX and it worked.
+To make a full chain certificate, you can use the following command:
+```cat certificate.crt ca_certificate.crt > fullchain.crt
+```
+Then load the fullchain.crt in NGINX configuration file.

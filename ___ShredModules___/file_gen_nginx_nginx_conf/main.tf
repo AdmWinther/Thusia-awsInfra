@@ -3,7 +3,8 @@ variable "domain_name" {}
 variable "crm_https_port_of_container" {}
 variable "crm_container_name" {}
 variable "joomla-container-name" {}
-variable "wordpress_container_name" {}
+variable "rest_api_port_on_host" {}
+variable "rest-api-container-name" {}
 
 
 resource "local_file" "nginx_conf" {
@@ -84,6 +85,25 @@ http{
 
       location / {
           proxy_pass http://${var.joomla-container-name}:80; # Use Wordpress container name and port
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+  }
+
+  #To redirect https://api.awin.dk to Rest API container port 8080.
+  server {
+      listen 443;
+      server_name api.${var.domain_name};
+
+#      ssl_certificate /etc/nginx/api_https_ssl_certificate.crt;
+      ssl_certificate /etc/nginx/api_https_ssl_fullchain.crt;
+      ssl_certificate_key /etc/nginx/api_https_ssl_private_key.key;
+#      ssl_trusted_certificate /etc/nginx/api_https_ssl_chain_certificate.crt;
+
+      location / {
+          proxy_pass http://${var.rest-api-container-name}:8080; # Use Wordpress container name and port
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

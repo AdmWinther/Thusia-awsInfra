@@ -8,6 +8,7 @@ resource "local_file" "etc_hosts" {
   content  = <<EOF
 127.0.0.1   crm.${var.domain_name}
 127.0.0.1   www.${var.domain_name}
+127.0.0.1   api.${var.domain_name}
 127.0.0.1   ${var.domain_name}
 127.0.0.1   localhost
 ::1         localhost6 localhost6.localdomain6
