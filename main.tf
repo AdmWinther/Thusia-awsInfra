@@ -587,7 +587,7 @@ resource "aws_instance" "my_instance" {
         #Inform the user that you are waiting for the containers to be up and running
         #The following initializers will be executed only if the server is being initialized.
         ${!var.container_volume_initialize ? "#": ""}echo "Waiting for the containers to be up and running..."
-        ${!var.container_volume_initialize ? "#": ""}sleep 30
+        ${!var.container_volume_initialize ? "#": ""}sleep 60
 
         # Changing the ownership of the james initializers file and execing it.
         ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}james_initialize.sh

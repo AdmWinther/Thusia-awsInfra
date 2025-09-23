@@ -1,0 +1,14 @@
+<h1>AMI Generator</h1>
+This module is used to generate the AMI files required for the AMI Loader module to function.
+The script is made to make sure the AMI can be updated easily and quickly.
+
+<h2>Recipe</h2>
+At first I needed to install Packer.
+
+```
+    # macOS
+   brew install packer
+
+   # Ubuntu / Debian
+   sudo apt-get update && sudo apt-get install -y packer
+```
