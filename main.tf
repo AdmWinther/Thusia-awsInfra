@@ -585,6 +585,10 @@ resource "aws_instance" "my_instance" {
         #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
         sudo chown -R 999:999 ${var.home-directory}volumes/${var.db_volume}/
 
+        fix ownership of the CRM volume
+        sudo chown -R 999:999 ${var.home-directory}volumes/${var.crm_volume}/
+
+
         #Run the containers
         #It is important to run this command with (-d) to detach, otherwise the rest of the initializers will not execute.
         docker-compose -f ${var.home-directory}compose.yml up -d

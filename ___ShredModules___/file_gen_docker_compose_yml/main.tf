@@ -122,7 +122,7 @@ services:
     volumes:
       # - ${var.home-directory}crm_https_ssl_private_key.key:/etc/apache2/ssl/server.key
       # - ${var.home-directory}crm_fullchain.crt:/etc/apache2/ssl/server.crt
-
+      # - ${var.home-directory}volumes/${var.crm_volume}:/var/www/html
       - crm:/var/www/html
     environment:
       ALLOW_EMPTY_PASSWORD: no
@@ -188,7 +188,7 @@ services:
        CRM_API_AuthenticationUrl: "legacy/Api/access_token"
        JOOMLA_DOMAIN: "https://www.awin.dk/"
        JOOMLA_API_BASE_URL: "api/index.php/v1"
-       JOOMLA_API_USERS = "/users"
+       JOOMLA_API_USERS: "/users"
   #   volumes:
   #     - ${var.home-directory}volumes/wordpress:/var/www/html
      networks:
