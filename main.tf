@@ -64,7 +64,9 @@ variable "demo_password" {}
 #CRM related variables
 variable "crm-container-name" {}
 variable "crm-docker-image" {}
-variable "crm_https_port_of_container" {}
+variable "suitecrm_image_home_directory" {}
+variable "crm_exposed_port_of_container_for_web" {}
+variable "crm_web_port_on_host" {}
 variable "crm-db-name" {}
 variable "crm-db-username" {}
 variable "crm-db-password" {}
@@ -161,6 +163,8 @@ module "file_gen_docker_compose_yml" {
     crm_volume            = var.crm_volume
     crm_user_username     = var.crm_user_username
     crm_user_password     = var.crm_user_password
+    crm_exposed_port_of_container_for_web = var.crm_exposed_port_of_container_for_web
+    crm_web_port_on_host = var.crm_web_port_on_host
 
     nginx-image = var.nginx-image
     nginx-container-name = var.nginx-container-name
@@ -217,6 +221,7 @@ module "file_gen_database_init" {
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    SuiteCRM CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_crm_initialize_sh" {
     source = "./___ShredModules___/file_gen_crm_initialize_sh"
+    suitecrm_image_home_directory = var.suitecrm_image_home_directory
 }
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JAMES CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_james_database_properties" {
@@ -270,7 +275,7 @@ module "file_gen_mailetcontainer_xml" {
 module "file_gen_nginx_conf" {
     source = "./___ShredModules___/file_gen_nginx_nginx_conf"
     crm_container_name = var.crm-container-name
-    crm_https_port_of_container = var.crm_https_port_of_container
+    crm_exposed_port_of_container_for_web = var.crm_exposed_port_of_container_for_web
     joomla-container-name = var.joomla-container-name
     rest_api_port_on_host = var.rest_api_port_on_host
     rest-api-container-name = var.rest-api-container-name
@@ -299,7 +304,7 @@ module "file_gen_joomla_dot_htaccess" {
 module "sec_grp_http_https_ssh_database" {
     source    = "./sec_grp_http_https_ssh_database"
     my_vpc_id = var.my_vpc_id
-    crm_web_port_On_host = var.crm_https_port_of_container
+    crm_web_port_on_host = var.crm_web_port_on_host
     joomla_web_port_On_host = var.joomla_web_port_On_host
     rest_api_port_on_host = var.rest_api_port_on_host
 }
@@ -382,7 +387,7 @@ resource "aws_instance" "my_instance" {
         destination = "/${var.home-directory}james_initialize.sh"
     }
     //####################################################################################
-    //#####################  Provisioning SuiteCRM configuration files  ##################
+    //#####################  Provisioning SuiteCRM files  ##################
     //####################################################################################
     provisioner "file" {
         source      = "./crm_initialize.sh"
@@ -402,6 +407,11 @@ resource "aws_instance" "my_instance" {
     provisioner "file" {
         source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_private_key.key"
         destination = "/${var.home-directory}crm_https_ssl_private_key.key"
+    }
+
+    provisioner "file" {
+        source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_fullchain.crt"
+        destination = "/${var.home-directory}crm_https_ssl_fullchain.crt"
     }
     //####################################################################################
     //#####################  Provisioning Nginx configuration files  #####################
@@ -574,11 +584,6 @@ resource "aws_instance" "my_instance" {
         #To avoid an error, first one should make the folder for database persistant data before give the ownership to mysql.
         #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
         sudo chown -R 999:999 ${var.home-directory}volumes/${var.db_volume}/
-
-        #Build the Rest API docker image
-        sudo -s
-        cd ${var.home-directory}bucket/Rest_API_JARs/
-        docker build -t ${var.rest_api_docker_image} .
 
         #Run the containers
         #It is important to run this command with (-d) to detach, otherwise the rest of the initializers will not execute.

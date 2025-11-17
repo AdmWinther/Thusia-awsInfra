@@ -80,3 +80,38 @@ To make a full chain certificate, you can use the following command:
 ```cat certificate.crt ca_certificate.crt > fullchain.crt
 ```
 Then load the fullchain.crt in NGINX configuration file.
+
+
+
+<h2>2.4 Joomla Components</h2>
+The structure of a simple Joomla component is as follows:
+```
+com_mycomponent/
+│
+├── admin/                      # Backend (administrator) files
+│   ├── services/                   # Services
+│   │   └── provider.php
+│   ├── src/                     # Models
+│   │   ├── Controller/             # Controllers (Single!)
+│   │   │   └── DisplayController.php
+│   │   ├── View/                   # View (Single!) 
+│   │   └── yourviewname/
+│   │       └── HtmlView.php
+│   └── tmpl/
+│       └── yourviewname/
+│           └── default.php
+└── mycomponent.xml          # Manifest (tells Joomla what’s here)
+
+
+```
+
+Attention:
+1. The component name must start with "com_".
+2. The manifest file must be in the root, named the same as the component name and in xml format.
+3. Backend files must be in the "admin" folder. it includes services, src, and tmpl.
+4. /admin/services/provider.php is the starting point of the backend.
+5. /admin/src/ contains the MVC structure. Subfolders must be named Controller, View, and Model
+6. /admin/src/Controller/ MUST CONTAIN A FILE NAMED DisplayController.php which provides a class named DisplayController, with a method named display().
+7. /admin/src/View/ CAN CONTAIN A FILE NAMED HtmlView.php which provides a class named HtmlView, with a method named display(). This method could be used to load data from the model and pass it to the template.
+8. /admin/tmpl/ contains the view templates. Each subfolder must be named after the view name, the same as subforlders in /admin/src/View/
+9. /admin/tmpl/yourviewname/default.php is the default template file for the view named "yourviewname".

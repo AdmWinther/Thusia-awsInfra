@@ -21,6 +21,8 @@ variable "crm-db-password" {}
 variable "crm_volume" {}
 variable "crm_user_username" {}
 variable "crm_user_password" {}
+variable "crm_exposed_port_of_container_for_web" {}
+variable "crm_web_port_on_host" {}
 
 #Nginx related variables
 variable "nginx-image" {}
@@ -118,24 +120,26 @@ services:
     image: ${var.crm-docker-image}
     container_name: ${var.crm-container-name}
     volumes:
-      - ${var.home-directory}crm_https_ssl_certificate.crt:/opt/bitnami/apache/conf/bitnami/certs/server.crt
-      - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/opt/bitnami/apache/conf/bitnami/certs/server-ca.crt
-      - ${var.home-directory}crm_https_ssl_private_key.key:/opt/bitnami/apache/conf/bitnami/certs/server.key
+      # - ${var.home-directory}crm_https_ssl_private_key.key:/etc/apache2/ssl/server.key
+      # - ${var.home-directory}crm_fullchain.crt:/etc/apache2/ssl/server.crt
 
-      - ${var.home-directory}volumes/${var.crm_volume}:/bitnami/suitecrm
+      - crm:/var/www/html
     environment:
       ALLOW_EMPTY_PASSWORD: no
-      ${var.volume-initialize ? "": "#"}SUITECRM_USERNAME: ${var.crm_user_username}
-      ${var.volume-initialize ? "": "#"}SUITECRM_PASSWORD: ${var.crm_user_password}
-      SUITECRM_DATABASE_USER: ${var.crm-db-username}
-      SUITECRM_DATABASE_PASSWORD: ${var.crm-db-password}
-      SUITECRM_DATABASE_NAME: ${var.crm-db-name}
+      ${var.volume-initialize ? "": "#"}ADMIN_USERNAME: ${var.crm_user_username}
+      ${var.volume-initialize ? "": "#"}ADMIN_PASSWORD: ${var.crm_user_password}
+      DB_USERNAME: ${var.crm-db-username}
+      DB_PASSWORD: ${var.crm-db-password}
+      DB_PORT: 3306
+      DB_HOST: ${var.db-container-name}
+      DB_NAME: ${var.crm-db-name}
+      SITE_URL: https://crm.awin.dk:8443/
     networks:
       - ${var.docker-network}
     ports:
       # We need 8080 for the REST API of SuiteCRM and 8443 for the web interface on HTTPS.
       - "8080:8080"
-      - "8443:8443"
+      - "${var.crm_web_port_on_host}:${var.crm_exposed_port_of_container_for_web}"
     depends_on:
       - mariadb
       - james
@@ -177,6 +181,14 @@ services:
        CRM_API_AuthenticationClientId: ${var.CRM_API_AuthenticationClientId}
        CRM_API_AuthenticationClientSecret: ${var.CRM_API_AuthenticationClientSecret}
        JOOMLA_API_TOKEN: ${var.JOOMLA_API_TOKEN}
+       NEW_EMAIL_REQUEST_SECRET_KEY: "supersecretkey_you_store_in_env_or_config"
+       CRM_API_ServerUrl : "https://crm.awin.dk:${var.crm_exposed_port_of_container_for_web}/"
+       CRM_API_AllModulesUrl: "https://crm.awin.dk:${var.crm_exposed_port_of_container_for_web}/Api/V8/module/"
+       CRM_NewAccountModuleName: "Accounts"
+       CRM_API_AuthenticationUrl: "legacy/Api/access_token"
+       JOOMLA_DOMAIN: "https://www.awin.dk/"
+       JOOMLA_API_BASE_URL: "api/index.php/v1"
+       JOOMLA_API_USERS = "/users"
   #   volumes:
   #     - ${var.home-directory}volumes/wordpress:/var/www/html
      networks:
@@ -184,24 +196,21 @@ services:
      depends_on:
          - mariadb
 
-
-  # wordpress:
-  #   image: ${var.wordpress-docker-image}
-  #   container_name: ${var.wordpress-container-name}
-  #   ports:
-  #     # We need 8081 for the web-API of Joomla
-  #     - "8081:80"
+  # roundcube:
+  #   image: roundcube/roundcubemail:latest
+  #   container_name: roundcube
+  #   restart: always
   #   environment:
-  #     WORDPRESS_DB_HOST: ${var.db-container-name}
-  #     WORDPRESS_DB_USER: ${var.wordpress_db_username}
-  #     WORDPRESS_DB_PASSWORD: ${var.wordpress_db_password}
-  #     WORDPRESS_DB_NAME: ${var.wordpress_db_name}
-  #   volumes:
-  #     - ${var.home-directory}volumes/wordpress:/var/www/html
+  #     ROUNDCUBE_DEFAULT_HOST: ${var.james-container-name}
+  #     ROUNDCUBE_SMTP_SERVER: ${var.james-container-name}
+  #     ROUNDCUBE_SMTP_PORT: 587
+  #     ROUNDCUBE_DES_KEY: 'myrandomdeskey123' # Must be exactly 16 characters
+  #   ports:
+  #     - "8083:80"
   #   networks:
   #     - ${var.docker-network}
   #   depends_on:
-  #       - mariadb
+  #     - james
 
 
   ngx:
@@ -210,9 +219,9 @@ services:
       volumes:
           - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
 
-          - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/crm_ssl-certificate.crt
-          - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/crm_ssl_certificate_key.key
-          - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/crm_ssl_ca_certificate.crt
+          - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/crm_https_ssl_certificate.crt
+          - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/crm_https_ssl_private_key.key
+          - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/crm_https_ssl_chain_certificate.crt
 
 
           - ${var.home-directory}www_https_ssl_fullchain.crt:/etc/nginx/www_https_ssl_fullchain.crt
@@ -234,7 +243,8 @@ services:
           - joomla
           # - wordpress
 
-
+volumes:
+  crm:
 
 networks:
   ${var.docker-network}:

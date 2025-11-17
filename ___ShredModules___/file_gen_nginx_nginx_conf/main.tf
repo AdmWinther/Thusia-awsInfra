@@ -1,6 +1,6 @@
 
 variable "domain_name" {}
-variable "crm_https_port_of_container" {}
+variable "crm_exposed_port_of_container_for_web" {}
 variable "crm_container_name" {}
 variable "joomla-container-name" {}
 variable "rest_api_port_on_host" {}
@@ -32,12 +32,12 @@ http{
       listen 443 ssl;
       server_name crm.${var.domain_name};
 
-      ssl_certificate /etc/nginx/crm_ssl-certificate.crt;
-      ssl_certificate_key /etc/nginx/crm_ssl_certificate_key.key;
-      ssl_trusted_certificate /etc/nginx/crm_ssl_ca_certificate.crt;
+      ssl_certificate /etc/nginx/crm_https_ssl_certificate.crt;
+      ssl_certificate_key /etc/nginx/crm_https_ssl_private_key.key;
+      ssl_trusted_certificate /etc/nginx/crm_https_ssl_chain_certificate.crt;
 
       location / {
-          proxy_pass https://${var.crm_container_name}:${var.crm_https_port_of_container}; # Use the host computer's IP address
+          proxy_pass http://${var.crm_container_name}:${var.crm_exposed_port_of_container_for_web}; # Use the host computer's IP address
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

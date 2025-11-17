@@ -3,7 +3,7 @@ variable "my_vpc_id" {
   type        = string
 }
 
-variable "crm_web_port_On_host" {
+variable "crm_web_port_on_host" {
   description = "The port that the CRM web server will be accessible on the host machine"
   type        = string
 }
@@ -39,7 +39,7 @@ resource "aws_security_group" "http_https_ssh_database" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8080
+  # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8086
   ingress {
     from_port   = 8080
     to_port     = 8080
@@ -64,8 +64,8 @@ resource "aws_security_group" "http_https_ssh_database" {
   }
 
   ingress {
-    from_port   = var.crm_web_port_On_host
-    to_port     = var.crm_web_port_On_host
+    from_port   = var.crm_web_port_on_host
+    to_port     = var.crm_web_port_on_host
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
