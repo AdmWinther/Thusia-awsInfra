@@ -37,11 +37,6 @@ CREATE DATABASE ${var.joomla_db_name};
 CREATE USER '${var.joomla_db_username}'@'%' IDENTIFIED BY '${var.joomla_db_password}';
 GRANT ALL PRIVILEGES ON ${var.joomla_db_name}.* TO '${var.joomla_db_username}'@'%';
 
--- Create databases and users for Wordpress, set username and password
-CREATE DATABASE ${var.wordpress_db_name};
-CREATE USER '${var.wordpress_db_username}'@'%' IDENTIFIED BY '${var.wordpress_db_password}';
-GRANT ALL PRIVILEGES ON ${var.wordpress_db_name}.* TO '${var.wordpress_db_username}'@'%';
-
 -- Create databases and users for RESTApi, set username and password
 CREATE DATABASE ${var.rest_api_db_name};
 CREATE USER '${var.rest_api_db_username}'@'%' IDENTIFIED BY '${var.rest_api_db_password}';

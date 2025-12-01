@@ -542,7 +542,7 @@ resource "aws_instance" "my_instance" {
         #**** $ { !var .  refresh_docker_images ? "#": ""} sudo mkfs -t ext4 /dev/xvdd
 
         # mount the EBS volume for containers persistance into the EC2 folder /home/ec2-user/volumes/
-        sudo mount /dev/xvdf ${var.home-directory}volumes/
+        sudo mount /dev/xvdf /var/lib/docker/volumes
 
         #The sub-project of saving images in the EBS volume will be postponed for now. This command is unused.
         # mount the EBS volume for docker images into the EC2 folder /home/ec2-user/docker_images/
@@ -587,7 +587,6 @@ resource "aws_instance" "my_instance" {
 
         fix ownership of the CRM volume
         sudo chown -R 999:999 ${var.home-directory}volumes/${var.crm_volume}/
-
 
         #Run the containers
         #It is important to run this command with (-d) to detach, otherwise the rest of the initializers will not execute.

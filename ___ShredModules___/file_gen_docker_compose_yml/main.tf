@@ -73,8 +73,9 @@ services:
       - ${var.home-directory}volumes/${var.db_volume}:/var/lib/mysql
       #this line needs to be executed just the first time. It is needed for making the users and databases.
       ${!var.volume-initialize? "#": ""}- ${var.home-directory}database_init.sql:/docker-entrypoint-initdb.d/database_init.sql
-    ports:
-      - "3306:3306"
+    #this part is not needed because the containers communicate through the docker network.
+    #ports:
+    #  - "3306:3306"
     environment:
       ALLOW_EMPTY_PASSWORD: yes
       MARIADB_ROOT_PASSWORD: ${var.db_root_password}
@@ -116,14 +117,11 @@ services:
     depends_on:
       - mariadb
 
-  suitecrm:
+  crm:
     image: ${var.crm-docker-image}
     container_name: ${var.crm-container-name}
     volumes:
-      # - ${var.home-directory}crm_https_ssl_private_key.key:/etc/apache2/ssl/server.key
-      # - ${var.home-directory}crm_fullchain.crt:/etc/apache2/ssl/server.crt
-      # - ${var.home-directory}volumes/${var.crm_volume}:/var/www/html
-      - crm:/var/www/html
+      - ${var.home-directory}volumes/${var.crm_volume}:/var/www/html/
     environment:
       ALLOW_EMPTY_PASSWORD: no
       ${var.volume-initialize ? "": "#"}ADMIN_USERNAME: ${var.crm_user_username}
@@ -133,7 +131,7 @@ services:
       DB_PORT: 3306
       DB_HOST: ${var.db-container-name}
       DB_NAME: ${var.crm-db-name}
-      SITE_URL: https://crm.awin.dk:8443/
+      SITE_URL: https://crm.awin.dk
     networks:
       - ${var.docker-network}
     ports:
@@ -142,7 +140,6 @@ services:
       - "${var.crm_web_port_on_host}:${var.crm_exposed_port_of_container_for_web}"
     depends_on:
       - mariadb
-      - james
 
   joomla:
     image: ${var.joomla-docker-image}
@@ -168,7 +165,6 @@ services:
       - ${var.docker-network}
     depends_on:
         - mariadb
-        - james
 
   rest:
      image: ${var.rest_api_docker_image}
@@ -239,12 +235,9 @@ services:
           - "80:80"
           - "443:443"
       depends_on:
-          - suitecrm
+          - crm
           - joomla
           # - wordpress
-
-volumes:
-  crm:
 
 networks:
   ${var.docker-network}:
