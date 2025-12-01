@@ -223,10 +223,8 @@ services:
           - ${var.home-directory}www_https_ssl_fullchain.crt:/etc/nginx/www_https_ssl_fullchain.crt
           - ${var.home-directory}www_https_ssl_private_key.key:/etc/nginx/www_ssl_certificate_key.key
 
-          - ${var.home-directory}api_https_ssl_certificate.crt:/etc/nginx/api_https_ssl_certificate.crt
           - ${var.home-directory}api_https_ssl_private_key.key:/etc/nginx/api_https_ssl_private_key.key
           - ${var.home-directory}api_https_ssl_fullchain.crt:/etc/nginx/api_https_ssl_fullchain.crt
-          - ${var.home-directory}api_https_ssl_chain_certificate.crt:/etc/nginx/api_https_ssl_chain_certificate.crt
       networks:
           - ${var.docker-network}
       ports:

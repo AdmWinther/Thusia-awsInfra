@@ -97,10 +97,8 @@ http{
       listen 443;
       server_name api.${var.domain_name};
 
-#      ssl_certificate /etc/nginx/api_https_ssl_certificate.crt;
       ssl_certificate /etc/nginx/api_https_ssl_fullchain.crt;
       ssl_certificate_key /etc/nginx/api_https_ssl_private_key.key;
-#      ssl_trusted_certificate /etc/nginx/api_https_ssl_chain_certificate.crt;
 
       location / {
           proxy_pass http://${var.rest-api-container-name}:8080; # Use Wordpress container name and port

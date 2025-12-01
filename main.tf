@@ -455,16 +455,6 @@ resource "aws_instance" "my_instance" {
     //####################################################################################
 
     provisioner "file" {
-        source      = "./SSL-certificates/api.awin.dk/api_https_ssl_certificate.crt"
-        destination = "/${var.home-directory}api_https_ssl_certificate.crt"
-    }
-
-    provisioner "file" {
-        source      = "./SSL-certificates/api.awin.dk/api_https_ssl_chain_certificate.crt"
-        destination = "/${var.home-directory}api_https_ssl_chain_certificate.crt"
-    }
-
-    provisioner "file" {
         source      = "./SSL-certificates/api.awin.dk/api_https_ssl_fullchain.crt"
         destination = "/${var.home-directory}api_https_ssl_fullchain.crt"
     }
