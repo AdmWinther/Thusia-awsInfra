@@ -167,30 +167,32 @@ services:
         - mariadb
 
   rest:
-     image: ${var.rest_api_docker_image}
-     container_name: ${var.rest-api-container-name}
-     ports:
-       - "${var.rest_api_port_on_host}:8080"
-     environment:
-       spring.profiles.active: "prod"
-       TEST_ENV_VAR: "TestValue-Terraform-575458535"
-       CRM_API_AuthenticationClientId: ${var.CRM_API_AuthenticationClientId}
-       CRM_API_AuthenticationClientSecret: ${var.CRM_API_AuthenticationClientSecret}
-       JOOMLA_API_TOKEN: ${var.JOOMLA_API_TOKEN}
-       NEW_EMAIL_REQUEST_SECRET_KEY: "supersecretkey_you_store_in_env_or_config"
-       CRM_API_ServerUrl : "https://crm.awin.dk:${var.crm_exposed_port_of_container_for_web}/"
-       CRM_API_AllModulesUrl: "https://crm.awin.dk:${var.crm_exposed_port_of_container_for_web}/Api/V8/module/"
-       CRM_NewAccountModuleName: "Accounts"
-       CRM_API_AuthenticationUrl: "legacy/Api/access_token"
-       JOOMLA_DOMAIN: "https://www.awin.dk/"
-       JOOMLA_API_BASE_URL: "api/index.php/v1"
-       JOOMLA_API_USERS: "/users"
-  #   volumes:
-  #     - ${var.home-directory}volumes/wordpress:/var/www/html
-     networks:
-       - ${var.docker-network}
-     depends_on:
-         - mariadb
+    image: ${var.rest_api_docker_image}
+    container_name: ${var.rest-api-container-name}
+    ports:
+      - "${var.rest_api_port_on_host}:8080"
+    environment:
+      spring.profiles.active: "prod"
+      TEST_ENV_VAR: "TestValue-Terraform-575458535"
+      CRM_API_AuthenticationClientId: ${var.CRM_API_AuthenticationClientId}
+      CRM_API_AuthenticationClientSecret: ${var.CRM_API_AuthenticationClientSecret}
+      JOOMLA_API_TOKEN: ${var.JOOMLA_API_TOKEN}
+      NEW_EMAIL_REQUEST_SECRET_KEY: "supersecretkey_you_store_in_env_or_config"
+      CRM_API_ServerUrl : "https://crm.awin.dk"
+      CRM_API_AllModulesUrl: "legacy/Api/V8/module"
+      CRM_NewAccountModuleName: "Accounts"
+      CRM_API_AuthenticationUrl: "legacy/Api/access_token"
+      JOOMLA_DOMAIN: "https://www.awin.dk/"
+      JOOMLA_API_BASE_URL: "api/index.php/v1"
+      JOOMLA_API_USERS: "/users"
+    volumes:
+      # We need to add the SSL certificate files to the Javas keystore as a trusted certificate. if
+      # we just put the file in /tmp, then __cacert_entrypoin.sh will load it automatically to the Java keystore.
+      - ${var.home-directory}fullchain.pem:/certificates/fullchain.pem
+    networks:
+      - ${var.docker-network}
+    depends_on:
+      - mariadb
 
   # roundcube:
   #   image: roundcube/roundcubemail:latest
@@ -210,32 +212,39 @@ services:
 
 
   ngx:
-      image: ${var.nginx-image}
-      container_name: ${var.nginx-container-name}
-      volumes:
-          - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
+    image: ${var.nginx-image}
+    container_name: ${var.nginx-container-name}
+    volumes:
+      - ${var.home-directory}nginx.conf:/etc/nginx/nginx.conf
 
-          - ${var.home-directory}crm_https_ssl_certificate.crt:/etc/nginx/crm_https_ssl_certificate.crt
-          - ${var.home-directory}crm_https_ssl_private_key.key:/etc/nginx/crm_https_ssl_private_key.key
-          - ${var.home-directory}crm_https_ssl_chain_certificate.crt:/etc/nginx/crm_https_ssl_chain_certificate.crt
+      # - ${var.home-directory}crm_https_ssl_certificate.pem:/etc/nginx/crm_https_ssl_certificate.pem
+      # - ${var.home-directory}crm_https_ssl_private_key.pem:/etc/nginx/crm_https_ssl_private_key.pem
+      # - ${var.home-directory}crm_https_ssl_chain_certificate.pem:/etc/nginx/crm_https_ssl_chain_certificate.pem
 
 
-          - ${var.home-directory}www_https_ssl_fullchain.crt:/etc/nginx/www_https_ssl_fullchain.crt
-          - ${var.home-directory}www_https_ssl_private_key.key:/etc/nginx/www_ssl_certificate_key.key
+      # - ${var.home-directory}www_https_ssl_fullchain.pem:/etc/nginx/www_https_ssl_fullchain.pem
+      # - ${var.home-directory}www_https_ssl_private_key.pem:/etc/nginx/www_ssl_certificate_key.pem
 
-          - ${var.home-directory}api_https_ssl_private_key.key:/etc/nginx/api_https_ssl_private_key.key
-          - ${var.home-directory}api_https_ssl_fullchain.crt:/etc/nginx/api_https_ssl_fullchain.crt
-      networks:
-          - ${var.docker-network}
-      ports:
-          #NGINX must be in control of the ports 80 and 443.
-          #If traffic from other containers should be redirected to port 80 or 443, then the nginx.conf file must be edited.
-          - "80:80"
-          - "443:443"
-      depends_on:
-          - crm
-          - joomla
-          # - wordpress
+      # - ${var.home-directory}api_https_ssl_private_key.pem:/etc/nginx/api_https_ssl_private_key.pem
+      # - ${var.home-directory}api_https_ssl_fullchain.pem:/etc/nginx/api_https_ssl_fullchain.pem
+
+
+      - ${var.home-directory}fullchain.pem:/etc/nginx/fullchain.pem
+      - ${var.home-directory}privkey.pem:/etc/nginx/privkey.pem
+      - ${var.home-directory}cert.pem:/etc/nginx/cert.pem
+      - ${var.home-directory}chain.pem:/etc/nginx/chain.pem
+
+    networks:
+      - ${var.docker-network}
+    ports:
+      #NGINX must be in control of the ports 80 and 443.
+      #If traffic from other containers should be redirected to port 80 or 443, then the nginx.conf file must be edited.
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - crm
+      - joomla
+      # - wordpress
 
 networks:
   ${var.docker-network}:

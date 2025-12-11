@@ -287,6 +287,11 @@ module "file_gen_etc_hosts" {
     domain_name = var.domain_name
 }
 
+module "file_gen_SSL_Agent" {
+    source = "./___ShredModules___/file_gen_SSL_Agent"
+    domain_name = var.domain_name
+    package-installer = var.package-installer
+}
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JOOMLA CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_joomla_php_ini" {
     source = "./___ShredModules___/file_gen_joomla_php_ini"
@@ -363,7 +368,7 @@ resource "aws_instance" "my_instance" {
     //####################################################################################
 
     provisioner "file" {
-        source      = "./james_keystore_with_ssl_certificate_do_not_delete"
+        source      = "./SSL-certificates/keystore"
         destination = "/${var.home-directory}keystore"
     }
 
@@ -395,24 +400,48 @@ resource "aws_instance" "my_instance" {
     }
 
     provisioner "file" {
-        source      = "./SSL-certificates/crm.awin.dk/crm_https_ssl_certificate.crt"
-        destination = "/${var.home-directory}crm_https_ssl_certificate.crt"
+        source      = "./SSL_Agent.sh"
+        destination = "/${var.home-directory}SSL_Agent.sh"
     }
 
     provisioner "file" {
-        source      = "./SSL-certificates/crm.awin.dk/crm_https_ssl_chain_certificate.crt"
-        destination = "/${var.home-directory}crm_https_ssl_chain_certificate.crt"
+        source      = "./SSL-certificates/fullchain.pem"
+        destination = "/${var.home-directory}fullchain.pem"
     }
 
     provisioner "file" {
-        source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_private_key.key"
-        destination = "/${var.home-directory}crm_https_ssl_private_key.key"
+        source      = "./SSL-certificates/chain.pem"
+        destination = "/${var.home-directory}chain.pem"
     }
 
     provisioner "file" {
-        source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_fullchain.crt"
-        destination = "/${var.home-directory}crm_https_ssl_fullchain.crt"
+        source      = "./SSL-certificates/cert.pem"
+        destination = "/${var.home-directory}cert.pem"
     }
+
+    provisioner "file" {
+        source      = "./SSL-certificates/privkey.pem"
+        destination = "/${var.home-directory}privkey.pem"
+    }
+    # provisioner "file" {
+    #     source      = "./SSL-certificates/crm.awin.dk/crm_https_ssl_certificate.pem"
+    #     destination = "/${var.home-directory}crm_https_ssl_certificate.pem"
+    # }
+    #
+    # provisioner "file" {
+    #     source      = "./SSL-certificates/crm.awin.dk/crm_https_ssl_chain_certificate.pem"
+    #     destination = "/${var.home-directory}crm_https_ssl_chain_certificate.pem"
+    # }
+    #
+    # provisioner "file" {
+    #     source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_private_key.pem"
+    #     destination = "/${var.home-directory}crm_https_ssl_private_key.pem"
+    # }
+    #
+    # provisioner "file" {
+    #     source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_fullchain.pem"
+    #     destination = "/${var.home-directory}crm_https_ssl_fullchain.pem"
+    # }
     //####################################################################################
     //#####################  Provisioning Nginx configuration files  #####################
     //####################################################################################
@@ -439,30 +468,30 @@ resource "aws_instance" "my_instance" {
         destination = "/${var.home-directory}.htaccess"
     }
 
-    provisioner "file" {
-        source      = "./SSL-certificates/awin.dk_and_www.awin.dk/www_https_ssl_fullchain.crt"
-        destination = "/${var.home-directory}www_https_ssl_fullchain.crt"
-    }
-
-    provisioner "file" {
-        source = "./SSL-certificates/awin.dk_and_www.awin.dk/www_https_ssl_private_key.key"
-        destination = "/${var.home-directory}www_https_ssl_private_key.key"
-    }
+    # provisioner "file" {
+    #     source      = "./SSL-certificates/awin.dk_and_www.awin.dk/www_https_ssl_fullchain.pem"
+    #     destination = "/${var.home-directory}www_https_ssl_fullchain.pem"
+    # }
+    #
+    # provisioner "file" {
+    #     source = "./SSL-certificates/awin.dk_and_www.awin.dk/www_https_ssl_private_key.pem"
+    #     destination = "/${var.home-directory}www_https_ssl_private_key.pem"
+    # }
 
 
     //####################################################################################
     //#####################  Provisioning REST_API container files   #####################
     //####################################################################################
 
-    provisioner "file" {
-        source      = "./SSL-certificates/api.awin.dk/api_https_ssl_fullchain.crt"
-        destination = "/${var.home-directory}api_https_ssl_fullchain.crt"
-    }
-
-    provisioner "file" {
-        source = "./SSL-certificates/api.awin.dk/api_https_ssl_private_key.key"
-        destination = "/${var.home-directory}api_https_ssl_private_key.key"
-    }
+    # provisioner "file" {
+    #     source      = "./SSL-certificates/api.awin.dk/api_https_ssl_fullchain.pem"
+    #     destination = "/${var.home-directory}api_https_ssl_fullchain.pem"
+    # }
+    #
+    # provisioner "file" {
+    #     source = "./SSL-certificates/api.awin.dk/api_https_ssl_private_key.pem"
+    #     destination = "/${var.home-directory}api_https_ssl_private_key.pem"
+    # }
 
 
     //####################################################################################
@@ -511,11 +540,13 @@ resource "aws_instance" "my_instance" {
         #Make a directory to mount the docker images volumes in it.
         #****sudo mkdir ${var.home-directory}docker_images/
 
+        echo "Check if volume is attached..."
         # Wait for the containers volume to be available
         while [ ! -e /dev/xvdf ]; do
           echo "Waiting for /dev/xvdf to be available..."
           sleep 5
         done
+        echo "Volume is attached."
 
         #****The sub-project of saving images in the EBS volume will be postponed for now. This command is unused.
         # Wait for the docker images volume to be available
@@ -532,7 +563,7 @@ resource "aws_instance" "my_instance" {
         #**** $ { !var .  refresh_docker_images ? "#": ""} sudo mkfs -t ext4 /dev/xvdd
 
         # mount the EBS volume for containers persistance into the EC2 folder /home/ec2-user/volumes/
-        sudo mount /dev/xvdf /var/lib/docker/volumes
+        sudo mount /dev/xvdf ${var.home-directory}volumes/
 
         #The sub-project of saving images in the EBS volume will be postponed for now. This command is unused.
         # mount the EBS volume for docker images into the EC2 folder /home/ec2-user/docker_images/
@@ -597,6 +628,10 @@ resource "aws_instance" "my_instance" {
         # Changing the ownership of the database initializers file and execing it.
         ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}crm_initialize.sh
         ${!var.container_volume_initialize ? "#": ""}sudo bash ${var.home-directory}crm_initialize.sh
+
+        # Add the SSL certificates to the trusted sources of Java, in our Rest API container and restarting it.
+        sudo docker exec ${var.rest-api-container-name} bash -c "keytool -import -trustcacerts -alias myserver -file /certificates/fullchain.pem -cacerts -storepass changeit -noprompt"
+        sudo docker restart ${var.rest-api-container-name}
 
         echo "Thusia server setup cmpleted."
     EOF

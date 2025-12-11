@@ -354,6 +354,7 @@ keytool -genkey -alias james -keyalg RSA -keystore keystore
 ```
 The Keystore password is james72laBalle. The Keytool will ask some questions. 
 it is important to set the Common Name (CN) to the domain name you are using. In my case, it is mail.awin.dk.
+So enter mail.awin.dk for "What is your first and last name?".
 It is also important to use correct contry code. I used DK for Denmark.
 
 NOTE: You do not need to export the files from James container. You only need to copy a text from certreq.csr file later.
