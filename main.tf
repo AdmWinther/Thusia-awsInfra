@@ -32,6 +32,8 @@ variable "db_driver_className" {}
 variable "db_volume" {}
 
 #James Server related variables
+variable "email_server_API_url" {}
+variable "email_server_API_port" {}
 variable "james_db_name" {}
 variable "james_db_username" {}
 variable "james_db_password" {}
@@ -152,6 +154,8 @@ module "file_gen_docker_compose_yml" {
     db_volume             = var.db_volume
 
 
+    email_server_API_url  = var.email_server_API_url
+    email_server_API_port = var.email_server_API_port
     james-container-name  = var.james-container-name
     james-docker-image    = var.james-docker-image
 
@@ -632,6 +636,10 @@ resource "aws_instance" "my_instance" {
         # Add the SSL certificates to the trusted sources of Java, in our Rest API container and restarting it.
         sudo docker exec ${var.rest-api-container-name} bash -c "keytool -import -trustcacerts -alias myserver -file /certificates/fullchain.pem -cacerts -storepass changeit -noprompt"
         sudo docker restart ${var.rest-api-container-name}
+
+        # If it is the first time the server is running, we need to change the .htaccess.txt to .htaccess in the joomla volume.
+        ${!var.container_volume_initialize ? "#": ""}sudo docker exec joomla bash -c "mv /var/www/html/htaccess.txt .htaccess"
+
 
         echo "Thusia server setup cmpleted."
     EOF

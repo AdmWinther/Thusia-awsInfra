@@ -9,6 +9,8 @@ variable "db_root_password" {}
 variable "db_volume" {}
 
 #James Server related variables
+variable "email_server_API_url" {}
+variable "email_server_API_port" {}
 variable "james-container-name" {}
 variable "james-docker-image" {}
 
@@ -109,8 +111,8 @@ services:
       - "465:465"
       - "587:587"
       - "993:993"
-      #Port 8000 is used for the REST API of James
-      - "8000:8000"
+      #Port 8000 is used for the REST API of James. it only un-comments for debug.
+      - "${var.email_server_API_port}:8000"
 
     networks:
       - ${var.docker-network}
@@ -185,6 +187,9 @@ services:
       JOOMLA_DOMAIN: "https://www.awin.dk/"
       JOOMLA_API_BASE_URL: "api/index.php/v1"
       JOOMLA_API_USERS: "/users"
+      maximumNumberOfEmailsPerUser: 3
+      EMAIL_API_ServerUrl: "${var.email_server_API_url}"
+      EMAIL_API_ServerPort: "${var.email_server_API_port}"
     volumes:
       # We need to add the SSL certificate files to the Javas keystore as a trusted certificate. if
       # we just put the file in /tmp, then __cacert_entrypoin.sh will load it automatically to the Java keystore.
