@@ -10,9 +10,9 @@ variable "joomla_db_name" {}
 variable "joomla_db_username" {}
 variable "joomla_db_password" {}
 
-variable "wordpress_db_name" {}
-variable "wordpress_db_username" {}
-variable "wordpress_db_password" {}
+# variable "wordpress_db_name" {}
+# variable "wordpress_db_username" {}
+# variable "wordpress_db_password" {}
 
 variable "rest_api_db_name" {}
 variable "rest_api_db_username" {}

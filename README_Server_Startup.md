@@ -6,7 +6,7 @@ Start the server with ```erraform apply -auto-approve```.
 <h2>2 stop the server</h2>
 Setup the Joomla server with usual parameters.
 
-Setup the mail settingss for SuiteCRM.
+Setup the mail settingss for SuiteCRM.  The parameters are in README_SuiteCRM.md file.
 
 <h2>3 setup Joomla parameters</h2>
 install the plugin to manage the users and go to extension manager and enable it.

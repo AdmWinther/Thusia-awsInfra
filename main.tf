@@ -89,7 +89,7 @@ variable "rest_api_port_on_host" {}
 variable "CRM_API_AuthenticationClientId" {}
 variable "CRM_API_AuthenticationClientSecret" {}
 variable "JOOMLA_API_TOKEN"{}
-
+variable "CRM_Mask_Email_Module_Name"{}
 
 variable "rest_api_docker_image" {}
 variable "rest-api-container-name" {
@@ -107,12 +107,12 @@ variable "joomla_web_port_On_host" {}
 variable "joomla_max_package_size" {}
 
 #Wordpress related variables
-variable "wordpress-container-name" {}
-variable "wordpress-docker-image" {}
-variable "wordpress_db_name" {}
-variable "wordpress_db_username" {}
-variable "wordpress_db_password" {}
-variable "wordpress_volume" {}
+# variable "wordpress-container-name" {}
+# variable "wordpress-docker-image" {}
+# variable "wordpress_db_name" {}
+# variable "wordpress_db_username" {}
+# variable "wordpress_db_password" {}
+# variable "wordpress_volume" {}
 
 #AWS-EC2 related variables
 variable "ec2-ami" {}
@@ -187,13 +187,14 @@ module "file_gen_docker_compose_yml" {
     CRM_API_AuthenticationClientId = var.CRM_API_AuthenticationClientId
     CRM_API_AuthenticationClientSecret = var.CRM_API_AuthenticationClientSecret
     JOOMLA_API_TOKEN = var.JOOMLA_API_TOKEN
+    CRM_Mask_Email_Module_Name = var.CRM_Mask_Email_Module_Name
 
-    wordpress-container-name = var.wordpress-container-name
-    wordpress-docker-image   = var.wordpress-docker-image
-    wordpress_db_name        = var.wordpress_db_name
-    wordpress_db_username    = var.wordpress_db_username
-    wordpress_db_password    = var.wordpress_db_password
-    wordpress_volume         = var.wordpress_volume
+    # wordpress-container-name = var.wordpress-container-name
+    # wordpress-docker-image   = var.wordpress-docker-image
+    # wordpress_db_name        = var.wordpress_db_name
+    # wordpress_db_username    = var.wordpress_db_username
+    # wordpress_db_password    = var.wordpress_db_password
+    # wordpress_volume         = var.wordpress_volume
 
     volume-initialize     = var.container_volume_initialize
 }
@@ -213,9 +214,9 @@ module "file_gen_database_init" {
     joomla_db_username = var.joomla_db_username
     joomla_db_password = var.joomla_db_password
 
-    wordpress_db_name = var.wordpress_db_name
-    wordpress_db_username = var.wordpress_db_username
-    wordpress_db_password = var.wordpress_db_password
+    # wordpress_db_name = var.wordpress_db_name
+    # wordpress_db_username = var.wordpress_db_username
+    # wordpress_db_password = var.wordpress_db_password
 
     rest_api_db_name   = var.rest_api_db_name
     rest_api_db_username   = var.rest_api_db_username
@@ -626,7 +627,7 @@ resource "aws_instance" "my_instance" {
         ${!var.container_volume_initialize ? "#": ""}sudo chmod +x ${var.home-directory}james_initialize.sh
         ${!var.container_volume_initialize ? "#": ""}sudo bash ${var.home-directory}james_initialize.sh
 
-        ${!var.container_volume_initialize ? "#": ""}echo "Waiting another 20 seconds for CRM to load completely."
+        ${!var.container_volume_initialize ? "#": ""}echo "Waiting another 30 seconds for CRM to load completely."
         ${!var.container_volume_initialize ? "#": ""}sleep 30
 
         # Changing the ownership of the database initializers file and execing it.

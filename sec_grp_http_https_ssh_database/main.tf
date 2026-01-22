@@ -31,7 +31,8 @@ resource "aws_security_group" "http_https_ssh_database" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # For the Apache James server REST APIs, we need to allow port 8000
+  # For the Apache James server REST APIs, we need to allow port 8000 ONLY IN DEBUG MODE.
+  # The microservices can already communicate with James via Docker network.
   ingress {
     from_port   = 8000
     to_port     = 8000

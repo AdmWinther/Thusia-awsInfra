@@ -46,14 +46,15 @@ variable "rest_api_port_on_host" {}
 variable "CRM_API_AuthenticationClientId" {}
 variable "CRM_API_AuthenticationClientSecret" {}
 variable "JOOMLA_API_TOKEN" {}
+variable "CRM_Mask_Email_Module_Name" {}
 
 #Wordpress related variables
-variable "wordpress-docker-image" {}
-variable "wordpress-container-name" {}
-variable "wordpress_volume" {}
-variable "wordpress_db_name" {}
-variable "wordpress_db_username" {}
-variable "wordpress_db_password" {}
+# variable "wordpress-docker-image" {}
+# variable "wordpress-container-name" {}
+# variable "wordpress_volume" {}
+# variable "wordpress_db_name" {}
+# variable "wordpress_db_username" {}
+# variable "wordpress_db_password" {}
 
 #EBC volume related variables
 variable "volume-initialize" {
@@ -190,6 +191,7 @@ services:
       maximumNumberOfEmailsPerUser: 3
       EMAIL_API_ServerUrl: "${var.email_server_API_url}"
       EMAIL_API_ServerPort: "${var.email_server_API_port}"
+      CRM_Mask_Email_Module_Name: ${var.CRM_Mask_Email_Module_Name}
     volumes:
       # We need to add the SSL certificate files to the Javas keystore as a trusted certificate. if
       # we just put the file in /tmp, then __cacert_entrypoin.sh will load it automatically to the Java keystore.
