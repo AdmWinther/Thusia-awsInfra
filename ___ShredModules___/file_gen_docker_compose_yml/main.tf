@@ -191,7 +191,8 @@ services:
       maximumNumberOfEmailsPerUser: 3
       EMAIL_API_ServerUrl: "${var.email_server_API_url}"
       EMAIL_API_ServerPort: "${var.email_server_API_port}"
-      CRM_Mask_Email_Module_Name: ${var.CRM_Mask_Email_Module_Name}
+      CRM_Mask_Email_Module_Name: "${var.CRM_Mask_Email_Module_Name}"
+      CRM_NewAccountTypeName: "Accounts"
     volumes:
       # We need to add the SSL certificate files to the Javas keystore as a trusted certificate. if
       # we just put the file in /tmp, then __cacert_entrypoin.sh will load it automatically to the Java keystore.

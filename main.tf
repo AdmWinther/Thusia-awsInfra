@@ -473,32 +473,6 @@ resource "aws_instance" "my_instance" {
         destination = "/${var.home-directory}.htaccess"
     }
 
-    # provisioner "file" {
-    #     source      = "./SSL-certificates/awin.dk_and_www.awin.dk/www_https_ssl_fullchain.pem"
-    #     destination = "/${var.home-directory}www_https_ssl_fullchain.pem"
-    # }
-    #
-    # provisioner "file" {
-    #     source = "./SSL-certificates/awin.dk_and_www.awin.dk/www_https_ssl_private_key.pem"
-    #     destination = "/${var.home-directory}www_https_ssl_private_key.pem"
-    # }
-
-
-    //####################################################################################
-    //#####################  Provisioning REST_API container files   #####################
-    //####################################################################################
-
-    # provisioner "file" {
-    #     source      = "./SSL-certificates/api.awin.dk/api_https_ssl_fullchain.pem"
-    #     destination = "/${var.home-directory}api_https_ssl_fullchain.pem"
-    # }
-    #
-    # provisioner "file" {
-    #     source = "./SSL-certificates/api.awin.dk/api_https_ssl_private_key.pem"
-    #     destination = "/${var.home-directory}api_https_ssl_private_key.pem"
-    # }
-
-
     //####################################################################################
     //#####################  Provisioning the docker-compose.yml file  ###################
     //####################################################################################

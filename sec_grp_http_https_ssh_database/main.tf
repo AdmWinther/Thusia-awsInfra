@@ -87,14 +87,6 @@ resource "aws_security_group" "http_https_ssh_database" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  #allow SSH
-  ingress {
-      from_port   = 21
-      to_port     = 21
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
   #allow Mariadb port
   # ingress {
   #   from_port   = 3306
