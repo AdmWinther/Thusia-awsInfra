@@ -1,0 +1,160 @@
+########################          AWS PARAMETERS          #######################
+# This file contains the variables that are used in the terraform code.
+#The vpc id of my aws account
+my_vpc_id = "vpc-022c7c9bb6c6af2d5"
+
+
+
+########################      DOCKER SHARED RESOURCES     #######################
+# docker network name. it is not of much use, we do not refer to it often, only in docker .yml file.
+docker-network = "my-docker-network"
+
+
+
+########################  DATABASE CONTAINER PARAMETERS   #######################
+#database container name
+db-container-name = "mariadb"
+#database image
+# PostgresSQL:       "postgres:16.3"
+# MySQL:            "mysql:9.2.0"
+# db-docker-image = "mysql:9.2.0"
+db-docker-image = "mariadb:10.6"
+
+#Dtabase SW. it can be postgres, or mysql. This parameter is used in Database Connection URL in
+# file james-database.properties
+# db_software = "mysql"
+db_software = "mariadb"
+
+#The password for the database root user. It is saved in my phone password manager.
+db_root_password = "root"
+
+#The name of the database that will be used by Apache James, the username and password used by James for the database.
+james_db_name = "jamesdb"
+james_db_username = "jamesdb"
+james_db_password = "abcde-FGHIJK-12345"
+
+#The name of the database that will be used by SuiteCRM, the username and password used by SuiteCRM for the database.
+crm-db-name = "crmdb"
+crm-db-username = "crmdb"
+crm-db-password = "abcde-FGHIJK-12345"
+
+#The name of the database that will be used by SuiteCRM, the username and password used by SuiteCRM for the database.
+joomla_db_name = "joomla_db" #if server reset in the future, this name must be changed to
+joomla_db_username = "joomla_db_user"
+joomla_db_password = "abcde-FGHIJK-12345"
+
+# db_driver_className = "com.mysql.cj.jdbc.Driver"
+db_driver_className = "org.mariadb.jdbc.Driver"
+db_volume = "database"
+
+########################          JAMES PARAMETERS      ########################
+james-docker-image = "apache/james:jpa-3.8.2"
+james-container-name = "james"
+
+email_server_API_url = "http://james"
+email_server_API_port = "8000"
+
+#DKIM related variables
+#dkim_selector = "dkim"
+
+#Main emails passwords
+admin_password = "this is admin password"
+awin_password = "this is awin password"
+crm_password = "this is crm password"
+fbl_password = "this si fbl password"
+dmarc_reports_password = "this is dmarc password"
+joomla_password = "this is joomla password"
+api_joomla_password = "this is api_Joomla password"
+wordpress_password = "this is wordpress password"
+
+
+jpo_password = "this is jpo password"
+john_password = "this is john password"
+jane_password = "this is jane password"
+test_password = "this is test password"
+demo_password = "this is demo password"
+
+#AWS SES related variables
+aws_ses_mail_relay_address = "email-smtp.us-east-1.amazonaws.com"
+aws_ses_mail_relay_port = "587"
+aws_ses_smtp_relay_username = "ses_smtp username"
+aws_ses_smtp_relay_password = "SMTP ses password"
+
+########################       SuiteCRM PARAMETERS        ########################
+#CRM container name
+crm-container-name = "crm"
+#CRM image. #We are using the SuiteCRM image from the docker hub. The image is called "bitnami/suitecrm:8.8.0"
+#crm-docker-image = "bitnamilegacy/suitecrm:8.6.0"
+crm-docker-image = "admwinther/suitecrm:8.6.0"
+suitecrm_image_home_directory = "/var/www/html/"
+crm_exposed_port_of_container_for_web = "80" #SuiteCRM web interface will be mapped to this port of the server.
+crm_web_port_on_host = "8086"
+
+#CRM Data
+#We need to make a docker volume to store CRM data. The volume name is stored in "crm-data"
+crm_volume = "suitecrm"
+
+#CRM login credentials
+crm_user_username = "crm login username"
+crm_user_password = "crm login password"
+
+#Rest API related variables
+#CRM Database name
+rest_api_db_name = "restdb"
+rest_api_db_username = "restdb"
+rest_api_db_password = "restsecret"
+
+
+########################          NGINX                   ########################
+nginx-image= "nginx:stable-alpine3.21-perl"
+nginx-container-name= "ngx"
+
+########################          JOOMLA                   ########################
+#Joomla container name
+joomla-container-name = "joomla"
+joomla-docker-image = "joomla:5.3.2-php8.3-apache"
+joomla_web_port_On_host = "8081" #Joomla web interface will be mapped to this port of the server.
+joomla_volume = "joomla"
+joomla_max_package_size = "200M"
+
+########################          Rest-API                   ########################
+rest-api-container-name = "rest"
+rest_api_docker_image = "admwinther/thusia-restapi:latest"
+rest_api_port_on_host = "8082"
+CRM_API_AuthenticationClientId = "crm_api_client_id"
+CRM_API_AuthenticationClientSecret = "crm api client secret"
+JOOMLA_API_TOKEN = "Joomla api token"
+CRM_Mask_Email_Module_Name = "ADAM_Mask_Email_Module"
+
+########################          EC2 PARAMETERS          ########################
+#EC2 properties.
+#IMI for the EC2
+#             Amazon linux:   "ami-08b5b3a93ed654d19"
+#             Ubuntu:         "ami-04b4f1a9cf54c11d0"
+ec2-ami = "ami-08b5b3a93ed654d19"
+
+#package installer, yum or apt-get. Depending on the AMI
+#package installer, yum or apt-get. Depending on the AMI
+#             Amazon linux:   yum
+#             Ubuntu:         apt-get
+package-installer = "yum"
+
+#EC2 home directory:
+#             Amazon linux:   /home/ec2-user/
+#             Ubuntu:         /root/ubuntu/
+home-directory = "/home/ec2-user/"
+
+#The S3 bucket that is used for james server and is mounted into the EC2.
+james_s3_bucket_name = "james.ec2.bucket"
+
+########################          EBC Volume PARAMETERS          ########################
+container_volume_initialize = "false"
+containers_volume_id    = "vol-aaaaaaaaaaaaaaaaaaaaa"
+
+########################          DNS PARAMETERS          ########################
+domain_name = "awin.dk"
+# my fixed IP address
+my_ip_address = "10.10.10.10"
+
+########################          ELASTIC IP          ########################
+eip_association_id = "eipalloc-111111111111111111"
