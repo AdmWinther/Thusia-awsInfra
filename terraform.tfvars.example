@@ -1,13 +1,13 @@
 ########################          AWS PARAMETERS          #######################
 # This file contains the variables that are used in the terraform code.
 #The vpc id of my aws account
-my_vpc_id = "vpc-022c7c9bb6c6af2d5"
+my_vpc_id = "vpc-00000000000000000"
 
 
 
 ########################      DOCKER SHARED RESOURCES     #######################
 # docker network name. it is not of much use, we do not refer to it often, only in docker .yml file.
-docker-network = "my-docker-network"
+docker-network = "thusia"
 
 
 
@@ -31,17 +31,17 @@ db_root_password = "root"
 #The name of the database that will be used by Apache James, the username and password used by James for the database.
 james_db_name = "jamesdb"
 james_db_username = "jamesdb"
-james_db_password = "abcde-FGHIJK-12345"
+james_db_password = "aaaaa-aaaaa-aaaaa"
 
 #The name of the database that will be used by SuiteCRM, the username and password used by SuiteCRM for the database.
 crm-db-name = "crmdb"
 crm-db-username = "crmdb"
-crm-db-password = "abcde-FGHIJK-12345"
+crm-db-password = "aaaaa-aaaaa-aaaaa"
 
 #The name of the database that will be used by SuiteCRM, the username and password used by SuiteCRM for the database.
 joomla_db_name = "joomla_db" #if server reset in the future, this name must be changed to
 joomla_db_username = "joomla_db_user"
-joomla_db_password = "abcde-FGHIJK-12345"
+joomla_db_password = "aaaaa-aaaaa-aaaaa"
 
 # db_driver_className = "com.mysql.cj.jdbc.Driver"
 db_driver_className = "org.mariadb.jdbc.Driver"
@@ -54,37 +54,33 @@ james-container-name = "james"
 email_server_API_url = "http://james"
 email_server_API_port = "8000"
 
-#DKIM related variables
-#dkim_selector = "dkim"
-
 #Main emails passwords
-admin_password = "this is admin password"
-awin_password = "this is awin password"
-crm_password = "this is crm password"
-fbl_password = "this si fbl password"
-dmarc_reports_password = "this is dmarc password"
-joomla_password = "this is joomla password"
-api_joomla_password = "this is api_Joomla password"
-wordpress_password = "this is wordpress password"
+admin_password = "aaaaa-aaaaa-aaaaa"
+awin_password = "aaaaa-aaaaa-aaaaa"
+crm_password = "aaaaa-aaaaa-aaaaa"
+fbl_password = "aaaaa-aaaaa-aaaaa"
+dmarc_reports_password = "aaaaa-aaaaa-aaaaa"
+joomla_password = "aaaaa-aaaaa-aaaaa"
+api_joomla_password = "aaaaa-aaaaa-aaaaa"
+wordpress_password = "aaaaa-aaaaa-aaaaa"
 
 
-jpo_password = "this is jpo password"
-john_password = "this is john password"
-jane_password = "this is jane password"
-test_password = "this is test password"
-demo_password = "this is demo password"
+jpo_password = "aaaaa-aaaaa-aaaaa"
+john_password = "aaaaa-aaaaa-aaaaa"
+jane_password = "aaaaa-aaaaa-aaaaa"
+test_password = "aaaaa-aaaaa-aaaaa"
+demo_password = "aaaaa-aaaaa-aaaaa"
 
 #AWS SES related variables
 aws_ses_mail_relay_address = "email-smtp.us-east-1.amazonaws.com"
 aws_ses_mail_relay_port = "587"
 aws_ses_smtp_relay_username = "ses_smtp username"
-aws_ses_smtp_relay_password = "SMTP ses password"
+aws_ses_smtp_relay_password = "aaaaa-aaaaa-aaaaa"
 
 ########################       SuiteCRM PARAMETERS        ########################
 #CRM container name
 crm-container-name = "crm"
-#CRM image. #We are using the SuiteCRM image from the docker hub. The image is called "bitnami/suitecrm:8.8.0"
-#crm-docker-image = "bitnamilegacy/suitecrm:8.6.0"
+#CRM image. #We are using the SuiteCRM image from the docker hub. The image is called "admwinther/suitecrm:8.6.0"
 crm-docker-image = "admwinther/suitecrm:8.6.0"
 suitecrm_image_home_directory = "/var/www/html/"
 crm_exposed_port_of_container_for_web = "80" #SuiteCRM web interface will be mapped to this port of the server.
@@ -96,7 +92,7 @@ crm_volume = "suitecrm"
 
 #CRM login credentials
 crm_user_username = "crm login username"
-crm_user_password = "crm login password"
+crm_user_password = "aaaaa-aaaaa-aaaaa"
 
 #Rest API related variables
 #CRM Database name
@@ -154,7 +150,7 @@ containers_volume_id    = "vol-aaaaaaaaaaaaaaaaaaaaa"
 ########################          DNS PARAMETERS          ########################
 domain_name = "awin.dk"
 # my fixed IP address
-my_ip_address = "10.10.10.10"
+my_ip_address = "xxx.xxx.xxx.xxx"
 
 ########################          ELASTIC IP          ########################
 eip_association_id = "eipalloc-111111111111111111"
