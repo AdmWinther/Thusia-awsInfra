@@ -1,49 +1,23 @@
-# Deployment Documentation
+# Deployment Guide
 
-## Provisioning Phase
+This document outlines the step-by-step process for deploying the Thusia infrastructure on AWS.
 
-1. Run terraform init
-2. Run terraform plan
-3. Run terraform apply
+## 1. Prerequisites
 
-Terraform provisions AWS infrastructure.
+Before proceeding with the deployment, ensure that the following tools are installed on your local machine:
 
----
+*   **Git**: Required for version control and cloning the repository.
+*   **Terraform**: The HashiCorp Infrastructure-as-Code tool used to provision the AWS resources.
 
-## Bootstrapping Phase
+## 2. Code Repository Access
 
-After EC2 is ready:
+To begin the deployment, you must obtain the project's source code.
 
-- Docker is installed
-- Docker Compose is configured
-- Required directories are created
-- EBS volume is mounted
+1.  **Request Permission**: Contact the repository owner to request access to the Git repository.
+2.  **Clone the Repository**: Once permission is granted, clone the repository to your local machine using the following command:
+    ```bash
+    git clone git@github.com:AdmWinther/Thusia.git
+    ```
 
----
+##
 
-## Application Deployment
-
-Docker Compose launches:
-
-- Nginx reverse proxy
-- SuiteCRM
-- Joomla
-- REST API
-- MySQL
-
----
-
-## SSL Configuration
-
-SSL certificates are mounted into the Nginx container.
-
-Nginx handles:
-- HTTP to HTTPS redirection
-- SSL termination
-- Reverse proxy routing
-
----
-
-## Persistence Strategy
-
-Application data is stored on EBS-backed directories to ensure data survives container restarts.
