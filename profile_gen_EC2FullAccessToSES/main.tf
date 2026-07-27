@@ -1,7 +1,7 @@
-# Create an IAM profile for EC2 instance with S3 access
+# Create an IAM profile for EC2 instance with SES access
 # 1st. we need to make the role.
-resource "aws_iam_role" "ec2_s3_ses_role" {
-  name               = "role_ec2_full_access_s3_and_ses"
+resource "aws_iam_role" "ec2_ses_role" {
+  name               = "role_ec2_full_access_ses"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role_policy.json
 
 }
@@ -19,24 +19,7 @@ data "aws_iam_policy_document" "ec2_assume_role_policy" {
 }
 
 # 3rd. we define the permissions in the policy. Those that take the role
-# can have full access to all S3 buckets. So we create IAM Policy
-# to give full access to S3 to the EC2 that assume this role.
-resource "aws_iam_policy" "s3_full_access" {
-  name        = "policy_s3_full_access"
-  description = "A policy that allows full access to S3"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "s3:*"
-        Resource = "*"
-      }
-    ]
-  })
-}
-
+# get full access to SES so the EC2 can relay mail via SES.
 resource "aws_iam_policy" "ses_full_access" {
     name        = "policy_ses_full_access"
     description = "A policy that allows full access to SES"
@@ -55,14 +38,9 @@ resource "aws_iam_policy" "ses_full_access" {
 
 # 4th. at the end, we attach the policy to the role.
 # Attach the Policy to the Role
-resource "aws_iam_role_policy_attachment" "ec2_s3_access" {
-  policy_arn = aws_iam_policy.s3_full_access.arn
-  role       = aws_iam_role.ec2_s3_ses_role.name
-}
-
 resource "aws_iam_role_policy_attachment" "ec2_ses_access" {
     policy_arn = aws_iam_policy.ses_full_access.arn
-    role       = aws_iam_role.ec2_s3_ses_role.name
+    role       = aws_iam_role.ec2_ses_role.name
 }
 
 # 5th, EC2 cannot assume role, because it is not human. it instead can assume
@@ -71,5 +49,5 @@ resource "aws_iam_role_policy_attachment" "ec2_ses_access" {
 # Create an IAM Instance Profile for the EC2 instance
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
   name = "ec2_instance_profile"
-   role = aws_iam_role.ec2_s3_ses_role.name
+   role = aws_iam_role.ec2_ses_role.name
 }

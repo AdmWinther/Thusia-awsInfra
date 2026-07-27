@@ -39,7 +39,6 @@ variable "james_db_username" {}
 variable "james_db_password" {}
 variable "james-container-name" {}
 variable "james-docker-image" {}
-variable "james_s3_bucket_name" {}
 
 #AWS SES related variables
 variable "aws_ses_mail_relay_address" {}
@@ -117,6 +116,8 @@ variable "joomla_max_package_size" {}
 #AWS-EC2 related variables
 variable "ec2-ami" {}
 variable "home-directory" {}
+variable "key_pair_name" {}
+variable "ssh_private_key_file" {}
 
 #Elastic ip association_id
 variable "eip_association_id" {}
@@ -324,8 +325,8 @@ module "sec_grp_mail_server" {
 }
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXX Role, Policy, Profile  XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-module "profile_gen_EC2_full_Access_to_S3_and_SES" {
-    source = "./profile_gen_EC2FullAccessToS3BucketAndSES"
+module "profile_gen_EC2_full_Access_to_SES" {
+    source = "./profile_gen_EC2FullAccessToSES"
 }
 
 #______________________________        EC2          _____________________________
@@ -339,7 +340,7 @@ resource "aws_instance" "my_instance" {
     connection {
         type        = "ssh"
         user        = "ec2-user"
-        private_key = file("./AccessKey.pem")
+        private_key = file("./${var.ssh_private_key_file}")
         host        = self.public_ip
     }
 
@@ -347,10 +348,10 @@ resource "aws_instance" "my_instance" {
         Name = "THUSIA-V1"
     }
 
-    iam_instance_profile = module.profile_gen_EC2_full_Access_to_S3_and_SES.ec2_full_access_to_s3_bucket_and_ses_profile_name
+    iam_instance_profile = module.profile_gen_EC2_full_Access_to_SES.ec2_full_access_to_ses_profile_name
     # Associate the security group with the EC2 instance
     security_groups = [module.sec_grp_http_https_ssh_database.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
-    key_name        = "AccessKey"
+    key_name        = var.key_pair_name
 
     # Copy some files into the EC2
 //####################################################################################
@@ -493,11 +494,6 @@ resource "aws_instance" "my_instance" {
         sudo ${var.package-installer} update -y
 
 
-        #downloading and installing AWS Mountpoint. #Mountpoint is used for mounting S3 into the EC2
-        sudo mkdir ${var.home-directory}mount-install-source/
-        sudo wget -P ${var.home-directory}mount-install-source/ https://s3.amazonaws.com/mountpoint-s3-release/latest/x86_64/mount-s3.rpm
-        sudo ${var.package-installer} install -y ${var.home-directory}mount-install-source/mount-s3.rpm
-
         #Installing and starting docker
         sudo ${var.package-installer} install -y docker
         sudo service docker start
@@ -507,10 +503,6 @@ resource "aws_instance" "my_instance" {
         #Installing docker-compose
         sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d'"' -f4)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
         sudo chmod +x /usr/local/bin/docker-compose
-
-        # mount the bucket
-        sudo mkdir ${var.home-directory}bucket/
-        sudo mount-s3 ${var.james_s3_bucket_name} ${var.home-directory}bucket/
 
         #Make a directory to mount the containers volumes in it.
         sudo mkdir ${var.home-directory}volumes/

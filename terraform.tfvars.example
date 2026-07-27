@@ -1,7 +1,14 @@
 ########################          AWS PARAMETERS          #######################
-# This file contains the variables that are used in the terraform code.
-#The vpc id of my aws account
-my_vpc_id = "vpc-00000000000000000"
+# Template for terraform.tfvars. Copy this file to terraform.tfvars and replace every
+# TODO-* placeholder. The placeholder category tells you where each value comes from:
+#   TODO-AWS-*        → from the AWS console (VPC, EBS, SES, Elastic IP)
+#   TODO-PWMGR-*      → a secret you choose and store in your password manager
+#   TODO-POSTDEPLOY-* → generated after the stack is running (CRM OAuth2, Joomla token)
+#   TODO-YOURS-*      → your own environment value (domain, SSH source IP, CRM admin name)
+# All other values are working defaults you can keep as-is.
+#
+# The VPC id of your AWS account.
+my_vpc_id = "TODO-AWS-vpc-id"
 
 
 
@@ -20,28 +27,28 @@ db-container-name = "mariadb"
 # db-docker-image = "mysql:9.2.0"
 db-docker-image = "mariadb:10.6"
 
-#Dtabase SW. it can be postgres, or mysql. This parameter is used in Database Connection URL in
+#Database SW. it can be postgres, or mysql. This parameter is used in Database Connection URL in
 # file james-database.properties
 # db_software = "mysql"
 db_software = "mariadb"
 
-#The password for the database root user. It is saved in my phone password manager.
-db_root_password = "root"
+#The password for the database root user. Store it in your password manager.
+db_root_password = "TODO-PWMGR-db_root_password"
 
 #The name of the database that will be used by Apache James, the username and password used by James for the database.
 james_db_name = "jamesdb"
 james_db_username = "jamesdb"
-james_db_password = "aaaaa-aaaaa-aaaaa"
+james_db_password = "TODO-PWMGR-james_db_password"
 
 #The name of the database that will be used by SuiteCRM, the username and password used by SuiteCRM for the database.
 crm-db-name = "crmdb"
 crm-db-username = "crmdb"
-crm-db-password = "aaaaa-aaaaa-aaaaa"
+crm-db-password = "TODO-PWMGR-crm_db_password"
 
-#The name of the database that will be used by SuiteCRM, the username and password used by SuiteCRM for the database.
-joomla_db_name = "joomla_db" #if server reset in the future, this name must be changed to
+#The name of the database that will be used by Joomla, the username and password used by Joomla for the database.
+joomla_db_name = "joomla_db"
 joomla_db_username = "joomla_db_user"
-joomla_db_password = "aaaaa-aaaaa-aaaaa"
+joomla_db_password = "TODO-PWMGR-joomla_db_password"
 
 # db_driver_className = "com.mysql.cj.jdbc.Driver"
 db_driver_className = "org.mariadb.jdbc.Driver"
@@ -54,28 +61,28 @@ james-container-name = "james"
 email_server_API_url = "http://james"
 email_server_API_port = "8000"
 
-#Main emails passwords
-admin_password = "aaaaa-aaaaa-aaaaa"
-awin_password = "aaaaa-aaaaa-aaaaa"
-crm_password = "aaaaa-aaaaa-aaaaa"
-fbl_password = "aaaaa-aaaaa-aaaaa"
-dmarc_reports_password = "aaaaa-aaaaa-aaaaa"
-joomla_password = "aaaaa-aaaaa-aaaaa"
-api_joomla_password = "aaaaa-aaaaa-aaaaa"
-wordpress_password = "aaaaa-aaaaa-aaaaa"
+#Main emails passwords. Store these in your password manager.
+admin_password = "TODO-PWMGR-admin_password"
+awin_password = "TODO-PWMGR-awin_password"
+crm_password = "TODO-PWMGR-crm_password"
+fbl_password = "TODO-PWMGR-fbl_password"
+dmarc_reports_password = "TODO-PWMGR-dmarc_reports_password"
+joomla_password = "TODO-PWMGR-joomla_password"
+api_joomla_password = "TODO-PWMGR-api_joomla_password"
+wordpress_password = "TODO-PWMGR-wordpress_password"
 
 
-jpo_password = "aaaaa-aaaaa-aaaaa"
-john_password = "aaaaa-aaaaa-aaaaa"
-jane_password = "aaaaa-aaaaa-aaaaa"
-test_password = "aaaaa-aaaaa-aaaaa"
-demo_password = "aaaaa-aaaaa-aaaaa"
+jpo_password = "TODO-PWMGR-jpo_password"
+john_password = "TODO-PWMGR-john_password"
+jane_password = "TODO-PWMGR-jane_password"
+test_password = "TODO-PWMGR-test_password"
+demo_password = "TODO-PWMGR-demo_password"
 
 #AWS SES related variables
 aws_ses_mail_relay_address = "email-smtp.us-east-1.amazonaws.com"
 aws_ses_mail_relay_port = "587"
-aws_ses_smtp_relay_username = "ses_smtp username"
-aws_ses_smtp_relay_password = "aaaaa-aaaaa-aaaaa"
+aws_ses_smtp_relay_username = "TODO-AWS-ses_smtp_username"     # AWS console → SES → SMTP settings → Create SMTP credentials
+aws_ses_smtp_relay_password = "TODO-AWS-ses_smtp_password"     # shown once at creation; store it in your password manager too
 
 ########################       SuiteCRM PARAMETERS        ########################
 #CRM container name
@@ -91,14 +98,14 @@ crm_web_port_on_host = "8086"
 crm_volume = "suitecrm"
 
 #CRM login credentials
-crm_user_username = "crm login username"
-crm_user_password = "aaaaa-aaaaa-aaaaa"
+crm_user_username = "TODO-YOURS-crm_admin_username"
+crm_user_password = "TODO-PWMGR-crm_user_password"
 
 #Rest API related variables
-#CRM Database name
+#REST API database name / credentials
 rest_api_db_name = "restdb"
 rest_api_db_username = "restdb"
-rest_api_db_password = "restsecret"
+rest_api_db_password = "TODO-PWMGR-rest_api_db_password"
 
 
 ########################          NGINX                   ########################
@@ -117,19 +124,24 @@ joomla_max_package_size = "200M"
 rest-api-container-name = "rest"
 rest_api_docker_image = "admwinther/thusia-restapi:latest"
 rest_api_port_on_host = "8082"
-CRM_API_AuthenticationClientId = "crm_api_client_id"
-CRM_API_AuthenticationClientSecret = "crm api client secret"
-JOOMLA_API_TOKEN = "Joomla api token"
+CRM_API_AuthenticationClientId = "TODO-POSTDEPLOY-crm_oauth2_client_id"       # SuiteCRM → OAuth2 client setup (after deploy)
+CRM_API_AuthenticationClientSecret = "TODO-POSTDEPLOY-crm_oauth2_client_secret"
+JOOMLA_API_TOKEN = "TODO-POSTDEPLOY-joomla_api_token"                          # Joomla → Users → API token (after deploy)
 CRM_Mask_Email_Module_Name = "ADAM_Mask_Email_Module"
+
+########################          SSH KEY PAIR          ########################
+# The EC2 key pair you created in AWS, used to SSH into the instance during provisioning.
+# Put the matching private key in the repo root (git-ignored via *.pem).
+key_pair_name        = "TODO-YOURS-key-pair-name"       # exact name as shown in EC2 → Key Pairs
+ssh_private_key_file = "TODO-YOURS-private-key-file"     # the .pem filename in the repo root, e.g. mykey.pem
 
 ########################          EC2 PARAMETERS          ########################
 #EC2 properties.
-#IMI for the EC2
+#AMI for the EC2
 #             Amazon linux:   "ami-08b5b3a93ed654d19"
 #             Ubuntu:         "ami-04b4f1a9cf54c11d0"
 ec2-ami = "ami-08b5b3a93ed654d19"
 
-#package installer, yum or apt-get. Depending on the AMI
 #package installer, yum or apt-get. Depending on the AMI
 #             Amazon linux:   yum
 #             Ubuntu:         apt-get
@@ -140,17 +152,17 @@ package-installer = "yum"
 #             Ubuntu:         /root/ubuntu/
 home-directory = "/home/ec2-user/"
 
-#The S3 bucket that is used for james server and is mounted into the EC2.
-james_s3_bucket_name = "james.ec2.bucket"
-
 ########################          EBC Volume PARAMETERS          ########################
+# Set to "true" ONLY for the first apply against a brand-new/empty EBS volume (it formats it); "false" thereafter.
 container_volume_initialize = "false"
-containers_volume_id    = "vol-aaaaaaaaaaaaaaaaaaaaa"
+containers_volume_id    = "TODO-AWS-ebs-volume-id"     # AWS console → EC2 → Volumes (same AZ as the instance) → vol-…
 
 ########################          DNS PARAMETERS          ########################
-domain_name = "awin.dk"
-# my fixed IP address
-my_ip_address = "xxx.xxx.xxx.xxx"
+domain_name = "TODO-YOURS-your-domain"        # your domain, e.g. example.com
+# your own IP address, for SSH allow-listing (currently declared but not used by main.tf)
+my_ip_address = "TODO-YOURS-ssh-source-ip"
 
 ########################          ELASTIC IP          ########################
-eip_association_id = "eipalloc-111111111111111111"
+# Allocate an Elastic IP in the AWS console and paste its ALLOCATION id (eipalloc-…) here.
+# ⚠️ Despite the variable name, this takes the *allocation* id, used as allocation_id in main.tf.
+eip_association_id = "TODO-AWS-eip-allocation-id"
