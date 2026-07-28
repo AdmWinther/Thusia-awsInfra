@@ -132,6 +132,9 @@ resource "local_file" "james_mailetcontainer_xml" {
 			<gatewayPort>${var.aws_ses_mail_relay_port}</gatewayPort>
 			<gatewayUsername>${var.aws_ses_smtp_relay_username}</gatewayUsername>
 			<gatewayPassword>${var.aws_ses_smtp_relay_password}</gatewayPassword>
+			<!-- SES refuses AUTH on an unencrypted connection; without this the -->
+			<!-- gateway answers "530 Must issue a STARTTLS command first"        -->
+			<startTLS>true</startTLS>
 			<!-- Set the HELO/EHLO name to use when connectiong to remote SMTP-Server -->
 			<mail.smtp.localhost>${var.domain_name}</mail.smtp.localhost>
 

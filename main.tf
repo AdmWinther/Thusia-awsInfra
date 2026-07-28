@@ -243,6 +243,7 @@ module "file_gen_james_database_properties" {
 
 module "file_gen_james_initialize_sh" {
     source = "./___ShredModules___/file_gen_james_initialize_sh"
+    domain_name             = var.domain_name
     admin_password          = var.admin_password
     awin_password           = var.awin_password
     jpo_password            = var.jpo_password
