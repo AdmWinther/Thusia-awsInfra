@@ -1,3 +1,4 @@
+variable "james_keystore_password" {}
 resource "local_file" "imapserver_xml" {
   #This module generate the file /etc/hosts.
   #This file defines which requests must be accepted by the server.
@@ -37,14 +38,14 @@ under the License.
              -->
             <keystore>file://conf/keystore</keystore>
             <keystoreType>PKCS12</keystoreType>
-            <secret>james72laBalle</secret>
+            <secret>${var.james_keystore_password}</secret>
             <provider>org.bouncycastle.jce.provider.BouncyCastleProvider</provider>
 
             <!-- Alternatively TLS keys can be supplied via PEM files -->
             <!-- <privateKey>file://conf/private.key</privateKey> -->
             <!-- <certificates>file://conf/certs.self-signed.csr</certificates> -->
             <!-- An optional secret might be specified for the private key -->
-            <!-- <secret>james72laBalle</secret> -->
+            <!-- <secret>${var.james_keystore_password}</secret> -->
         </tls>
         <connectionLimit>5</connectionLimit>
         <connectionLimitPerIP>5</connectionLimitPerIP>
@@ -66,14 +67,14 @@ under the License.
              -->
             <keystore>file://conf/keystore</keystore>
             <keystoreType>PKCS12</keystoreType>
-            <secret>james72laBalle</secret>
+            <secret>${var.james_keystore_password}</secret>
             <provider>org.bouncycastle.jce.provider.BouncyCastleProvider</provider>
 
             <!-- Alternatively TLS keys can be supplied via PEM files -->
             <!-- <privateKey>file://conf/private.key</privateKey> -->
             <!-- <certificates>file://conf/certs.self-signed.csr</certificates> -->
             <!-- An optional secret might be specified for the private key -->
-            <!-- <secret>james72laBalle</secret> -->
+            <!-- <secret>${var.james_keystore_password}</secret> -->
         </tls>
         <connectionLimit>0</connectionLimit>
         <connectionLimitPerIP>0</connectionLimitPerIP>

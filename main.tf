@@ -18,7 +18,7 @@ locals {
 # Define the variables. The variables are defined in the terraform.tfvars file
 #AWS related variables
 variable "my_vpc_id" {}
-
+variable "my_subnet_id" {}
 #Docker related variables
 variable "docker-network" {}
 variable "package-installer" {}
@@ -39,7 +39,7 @@ variable "james_db_username" {}
 variable "james_db_password" {}
 variable "james-container-name" {}
 variable "james-docker-image" {}
-
+variable "james_keystore_password" {}
 #AWS SES related variables
 variable "aws_ses_mail_relay_address" {}
 variable "aws_ses_mail_relay_port" {}
@@ -48,19 +48,12 @@ variable "aws_ses_smtp_relay_password" {}
 
 #Test and Demo emails password
 variable "admin_password" {}
-variable "awin_password" {}
 variable "crm_password" {}
 variable "joomla_password" {}
 variable "api_joomla_password" {}
-variable "wordpress_password" {}
-variable "jpo_password" {}
 variable "fbl_password" {}
 variable "dmarc_reports_password" {}
 
-variable "john_password" {}
-variable "jane_password" {}
-variable "test_password" {}
-variable "demo_password" {}
 
 #CRM related variables
 variable "crm-container-name" {}
@@ -121,22 +114,24 @@ variable "ssh_private_key_file" {}
 
 #Elastic ip association_id
 variable "eip_association_id" {}
+variable "elastic_ip" {}
 variable "my_ip_address" {}
 
 #EBC volume related variables
 variable "container_volume_initialize" {
     type = bool
 }
+
+variable "bootstrap_run" {
+    type = bool
+}
 variable "containers_volume_id" {}
-
-
-#****variable "refresh_docker_images" {
-#****    type = bool
-#****}
-#****variable "docker_images_volume_id" {}
 
 #DNS related variables
 variable "domain_name" {}
+variable "certificate_subdomains" {
+    type = list(string)
+}
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    FILE GENERATOR   XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -215,10 +210,6 @@ module "file_gen_database_init" {
     joomla_db_username = var.joomla_db_username
     joomla_db_password = var.joomla_db_password
 
-    # wordpress_db_name = var.wordpress_db_name
-    # wordpress_db_username = var.wordpress_db_username
-    # wordpress_db_password = var.wordpress_db_password
-
     rest_api_db_name   = var.rest_api_db_name
     rest_api_db_username   = var.rest_api_db_username
     rest_api_db_password   = var.rest_api_db_password
@@ -245,26 +236,20 @@ module "file_gen_james_initialize_sh" {
     source = "./___ShredModules___/file_gen_james_initialize_sh"
     domain_name             = var.domain_name
     admin_password          = var.admin_password
-    awin_password           = var.awin_password
-    jpo_password            = var.jpo_password
     joomla_password         = var.joomla_password
-    wordpress_password      = var.wordpress_password
     api_joomla_password     = var.api_joomla_password
     fbl_password            = var.fbl_password
     dmarc_reports_password  = var.dmarc_reports_password
-
-    john_password           = var.john_password
-    jane_password           = var.jane_password
-    test_password           = var.test_password
-    demo_password           = var.demo_password
     crm_password            = var.crm_password
 }
 
 module "file_gen_james_imapserver_xml" {
+    james_keystore_password = var.james_keystore_password
     source = "./___ShredModules___/file_gen_james_imapserver_xml"
 }
 
 module "file_gen_smtpserver_xml" {
+    james_keystore_password = var.james_keystore_password
     source = "./___ShredModules___/file_gen_james_smtpserver_xml"
 }
 
@@ -296,8 +281,17 @@ module "file_gen_etc_hosts" {
 
 module "file_gen_SSL_Agent" {
     source = "./___ShredModules___/file_gen_SSL_Agent"
+    certificate_subdomains = var.certificate_subdomains
+    james_keystore_password = var.james_keystore_password
     domain_name = var.domain_name
+    home-directory = var.home-directory
     package-installer = var.package-installer
+}
+module "file_gen_SSL_Fetch" {
+    source = "./___ShredModules___/file_gen_SSL_Fetch"
+    ssh_private_key_file = var.ssh_private_key_file
+    elastic_ip = var.elastic_ip
+    home-directory = var.home-directory
 }
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JOOMLA CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_joomla_php_ini" {
@@ -316,6 +310,7 @@ module "file_gen_joomla_dot_htaccess" {
 module "sec_grp_http_https_ssh_database" {
     source    = "./sec_grp_http_https_ssh_database"
     my_vpc_id = var.my_vpc_id
+    my_ip_address = var.my_ip_address
     crm_web_port_on_host = var.crm_web_port_on_host
     joomla_web_port_On_host = var.joomla_web_port_On_host
     rest_api_port_on_host = var.rest_api_port_on_host
@@ -351,12 +346,21 @@ resource "aws_instance" "my_instance" {
 
     iam_instance_profile = module.profile_gen_EC2_full_Access_to_SES.ec2_full_access_to_ses_profile_name
     # Associate the security group with the EC2 instance
-    security_groups = [module.sec_grp_http_https_ssh_database.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
+    #security_groups = [module.sec_grp_http_https_ssh_database.sec_grp_name, module.sec_grp_mail_server.sec_grp_name]
+    vpc_security_group_ids = [module.sec_grp_http_https_ssh_database.sec_grp_id, module.sec_grp_mail_server.sec_grp_id]
+
+    # The account has no default VPC, so the subnet must be named explicitly. It has to be a
+    # PUBLIC subnet (0.0.0.0/0 → internet gateway) in the same AZ as the EBS volume, and since
+    # it does not auto-assign public IPs we request one — the SSH file provisioners connect to
+    # self.public_ip, and the Elastic IP is only associated after the instance is fully created.
+    subnet_id                   = var.my_subnet_id
+    associate_public_ip_address = true
     key_name        = var.key_pair_name
 
     # Copy some files into the EC2
-//####################################################################################
+    //####################################################################################
     //Provisioning Database configuration files
+
     provisioner "file" {
         source      = "./james-database.properties"
         destination = "/${var.home-directory}james-database.properties"
@@ -430,25 +434,6 @@ resource "aws_instance" "my_instance" {
         source      = "./SSL-certificates/privkey.pem"
         destination = "/${var.home-directory}privkey.pem"
     }
-    # provisioner "file" {
-    #     source      = "./SSL-certificates/crm.awin.dk/crm_https_ssl_certificate.pem"
-    #     destination = "/${var.home-directory}crm_https_ssl_certificate.pem"
-    # }
-    #
-    # provisioner "file" {
-    #     source      = "./SSL-certificates/crm.awin.dk/crm_https_ssl_chain_certificate.pem"
-    #     destination = "/${var.home-directory}crm_https_ssl_chain_certificate.pem"
-    # }
-    #
-    # provisioner "file" {
-    #     source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_private_key.pem"
-    #     destination = "/${var.home-directory}crm_https_ssl_private_key.pem"
-    # }
-    #
-    # provisioner "file" {
-    #     source = "./SSL-certificates/crm.awin.dk/crm_https_ssl_fullchain.pem"
-    #     destination = "/${var.home-directory}crm_https_ssl_fullchain.pem"
-    # }
     //####################################################################################
     //#####################  Provisioning Nginx configuration files  #####################
     //####################################################################################
@@ -583,7 +568,7 @@ resource "aws_instance" "my_instance" {
 
         #Run the containers
         #It is important to run this command with (-d) to detach, otherwise the rest of the initializers will not execute.
-        docker-compose -f ${var.home-directory}compose.yml up -d
+        ${var.bootstrap_run ? "#": ""} docker-compose -f ${var.home-directory}compose.yml up -d
 
         #Inform the user that you are waiting for the containers to be up and running
         #The following initializers will be executed only if the server is being initialized.

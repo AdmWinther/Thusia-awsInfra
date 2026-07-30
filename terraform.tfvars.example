@@ -9,6 +9,7 @@
 #
 # The VPC id of your AWS account.
 my_vpc_id = "TODO-AWS-vpc-id"
+my_subnet_id = "TODO-AWS-subnet-id"    # a PUBLIC subnet (0.0.0.0/0 → internet gateway) in the same AZ as your EBS volume
 
 
 
@@ -61,22 +62,18 @@ james-container-name = "james"
 email_server_API_url = "http://james"
 email_server_API_port = "8000"
 
+# Password protecting the James PKCS12 keystore. SSL_Agent.sh builds the keystore with it
+# and the smtp/imap configs read it back, so all three must agree — change it in one place
+# only and James will refuse to start TLS. Do NOT use the documented James default.
+james_keystore_password = "TODO-PWMGR-james_keystore_password"
+
 #Main emails passwords. Store these in your password manager.
 admin_password = "TODO-PWMGR-admin_password"
-awin_password = "TODO-PWMGR-awin_password"
 crm_password = "TODO-PWMGR-crm_password"
 fbl_password = "TODO-PWMGR-fbl_password"
 dmarc_reports_password = "TODO-PWMGR-dmarc_reports_password"
 joomla_password = "TODO-PWMGR-joomla_password"
 api_joomla_password = "TODO-PWMGR-api_joomla_password"
-wordpress_password = "TODO-PWMGR-wordpress_password"
-
-
-jpo_password = "TODO-PWMGR-jpo_password"
-john_password = "TODO-PWMGR-john_password"
-jane_password = "TODO-PWMGR-jane_password"
-test_password = "TODO-PWMGR-test_password"
-demo_password = "TODO-PWMGR-demo_password"
 
 #AWS SES related variables
 aws_ses_mail_relay_address = "email-smtp.us-east-1.amazonaws.com"
@@ -155,14 +152,25 @@ home-directory = "/home/ec2-user/"
 ########################          EBC Volume PARAMETERS          ########################
 # Set to "true" ONLY for the first apply against a brand-new/empty EBS volume (it formats it); "false" thereafter.
 container_volume_initialize = "false"
+# "true" keeps the container stack down so certbot --standalone can bind port 80 on the
+# bootstrap run (there are no certificates or keystore yet). Set to "false" for the real run.
+bootstrap_run = "true"
 containers_volume_id    = "TODO-AWS-ebs-volume-id"     # AWS console → EC2 → Volumes (same AZ as the instance) → vol-…
 
 ########################          DNS PARAMETERS          ########################
 domain_name = "TODO-YOURS-your-domain"        # your domain, e.g. example.com
-# your own IP address, for SSH allow-listing (currently declared but not used by main.tf)
-my_ip_address = "TODO-YOURS-ssh-source-ip"
+# Subdomains included in the Let's Encrypt certificate, alongside the apex.
+# "mail" covers the mail server's SMTP/IMAP TLS (it is also the MX target). Each label must
+# already have an A record pointing at your server — certbot validates every name over
+# HTTP-01, and a single unresolvable name fails the whole request.
+certificate_subdomains = ["www", "api", "crm", "mail"]
+# your own IP address, for SSH allow-listing
+my_ip_address = "TODO-YOURS-ssh-source-ip"    # single-host CIDR, e.g. 203.0.113.7/32
 
 ########################          ELASTIC IP          ########################
 # Allocate an Elastic IP in the AWS console and paste its ALLOCATION id (eipalloc-…) here.
 # ⚠️ Despite the variable name, this takes the *allocation* id, used as allocation_id in main.tf.
 eip_association_id = "TODO-AWS-eip-allocation-id"
+# The Elastic IP's public address (not its id). SSL_Fetch.sh scp's from it, and it is the
+# target of your DNS A-records. Keep it in step with the allocation id above.
+elastic_ip = "TODO-AWS-eip-public-address"

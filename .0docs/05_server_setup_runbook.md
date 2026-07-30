@@ -17,6 +17,118 @@ otherwise the volume attachment fails. The region and AZ are set in `main.tf` (t
 provider `region` and `locals.availability_zone`); change them there if you use
 different ones.
 
+## Step 0 — 🖐 Local tooling and AWS credentials
+**Why:** Everything after this runs from your own machine: Terraform provisions the
+infrastructure and SSHes into the instance, and you use the AWS CLI to check the
+account. Neither is installed by anything in this repo.
+
+**Procedure**
+1. Install **Terraform** (1.5 or newer) and the **AWS CLI v2**, using whatever
+   package manager your OS provides. Confirm both:
+   ```
+   terraform version
+   aws --version
+   ```
+2. In the AWS console, create an **IAM user for Terraform** — do *not* use the
+   account root user. Give it no console access if it is only for Terraform.
+3. Attach two customer-managed policies to that user. The first allows EC2 work,
+   fenced to the single region you chose above:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Sid": "Ec2ManagementInHomeRegionOnly",
+         "Effect": "Allow",
+         "Action": "ec2:*",
+         "Resource": "*",
+         "Condition": { "StringEquals": { "aws:RequestedRegion": "<YOUR_REGION>" } }
+       }
+     ]
+   }
+   ```
+   The second scopes the IAM half to exactly the three objects this repo creates.
+   Replace `<ACCOUNT_ID>` with your AWS account number:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Sid": "ManageTheEc2SesRole",
+         "Effect": "Allow",
+         "Action": [
+           "iam:CreateRole", "iam:GetRole", "iam:DeleteRole", "iam:UpdateRole",
+           "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags",
+           "iam:ListRolePolicies", "iam:ListAttachedRolePolicies",
+           "iam:AttachRolePolicy", "iam:DetachRolePolicy",
+           "iam:ListInstanceProfilesForRole"
+         ],
+         "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/role_ec2_full_access_ses"
+       },
+       {
+         "Sid": "ManageTheSesPolicy",
+         "Effect": "Allow",
+         "Action": [
+           "iam:CreatePolicy", "iam:GetPolicy", "iam:DeletePolicy",
+           "iam:CreatePolicyVersion", "iam:DeletePolicyVersion",
+           "iam:GetPolicyVersion", "iam:ListPolicyVersions",
+           "iam:TagPolicy", "iam:UntagPolicy"
+         ],
+         "Resource": "arn:aws:iam::<ACCOUNT_ID>:policy/policy_ses_full_access"
+       },
+       {
+         "Sid": "ManageTheInstanceProfile",
+         "Effect": "Allow",
+         "Action": [
+           "iam:CreateInstanceProfile", "iam:GetInstanceProfile",
+           "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile",
+           "iam:RemoveRoleFromInstanceProfile", "iam:TagInstanceProfile",
+           "iam:UntagInstanceProfile"
+         ],
+         "Resource": "arn:aws:iam::<ACCOUNT_ID>:instance-profile/ec2_instance_profile"
+       },
+       {
+         "Sid": "PassTheRoleToEc2Only",
+         "Effect": "Allow",
+         "Action": "iam:PassRole",
+         "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/role_ec2_full_access_ses",
+         "Condition": { "StringEquals": { "iam:PassedToService": "ec2.amazonaws.com" } }
+       }
+     ]
+   }
+   ```
+4. Create an **access key** for that user (type: *Command Line Interface*), then hand
+   it to the CLI. The secret is shown only once:
+   ```
+   aws configure
+   ```
+   Answer with the access key id, the secret, your region, and `json`.
+5. Verify you are the IAM user and not root:
+   ```
+   aws sts get-caller-identity
+   ```
+   The `Arn` must end in `:user/<your-user-name>`.
+
+**Gotchas**
+- **`aws login` is not enough for Terraform.** The CLI's login session is cached in
+  `~/.aws/login/` and read only by the CLI. Terraform reads `~/.aws/credentials`,
+  the `AWS_*` environment variables, the SSO cache, or instance metadata — so the
+  CLI can be happily authenticated while Terraform reports *"No valid credential
+  sources found"*. Use `aws configure` with an access key.
+- If you used `aws login` earlier, run `aws logout` and make sure no
+  `login_session = …` line is left in `~/.aws/config`. A leftover line can make the
+  CLI fail to parse the file at all.
+- **`iam:PassRole` is the permission that bites.** Without it, launching the instance
+  is rejected the moment it attaches the instance profile, and the error message does
+  not clearly say so.
+- The region you configure must match the provider region hardcoded in `main.tf`, or
+  Terraform and your CLI checks will look at different places.
+- Scoping the EC2 policy to an action list instead of `ec2:*` is tempting but
+  brittle: a missing action fails the apply **midway**, after the instance exists and
+  provisioners have started. Region-fencing is the cheaper guardrail.
+- Do not reuse the SES SMTP credentials from Step 6 here. That is a separate identity
+  that only needs `ses:SendRawEmail`.
+
 ## Step 1 — 🖐 Create `terraform.tfvars` from the example
 Copy `terraform.tfvars.example` to `terraform.tfvars` (git-ignored via `*.tfvars`,
 so your secrets are never committed). Keep every configuration value (images,
@@ -49,19 +161,52 @@ associate it with anything — `aws_eip_association` attaches it during `apply`.
 - The **Allocation ID** (`eipalloc-…`) → `terraform.tfvars : eip_association_id`.
   ⚠️ Despite its name, this variable takes the *allocation* ID (used as
   `allocation_id` in `main.tf`), not an association ID.
-- The **public IPv4 address** → the target for all your DNS A-records (a later
-  step). It is **not** a tfvars value; `my_ip_address` is *your own* IP for SSH
-  allow-listing, not the server's address.
+- The **public IPv4 address** → `terraform.tfvars : elastic_ip`, **and** the target for
+  all your DNS A-records (a later step). `SSL_Fetch.sh` uses this variable to SCP the
+  certificates off the server.
 
-## Step 3 — 🖐 Look up your VPC id
-Terraform places the security groups in an **existing** VPC — it does not create
-one. Use your account's default VPC unless you have a reason to use another; it must
-be in the same region as your server.
+**Gotchas**
+- The allocation id and the address are **two separate variables describing one Elastic
+  IP**, and nothing keeps them in step. If you ever release the address and allocate a
+  new one, update both.
+- Do not confuse `elastic_ip` with `my_ip_address`: the first is *your server's* address,
+  the second is *your own* address, used to restrict SSH.
 
-**Procedure (AWS console):** VPC → *Your VPCs* → copy the **VPC ID** (`vpc-…`) of
-the VPC you want to use.
+## Step 3 — 🖐 Look up your VPC id and pick a public subnet
+Terraform places the security groups in an **existing** VPC and launches the instance
+into an **existing** subnet — it creates neither. Both must be in the same region as
+your server.
 
-**Capture:** the VPC ID → `terraform.tfvars : my_vpc_id`.
+**Procedure (AWS console):**
+1. VPC → *Your VPCs* → copy the **VPC ID** (`vpc-…`) of the VPC you want to use.
+2. VPC → *Subnets*, filtered to that VPC → pick a subnet and copy its **Subnet ID**
+   (`subnet-…`). It must satisfy two conditions:
+   - **Same availability zone** as the EBS data volume you create in Step 4 — an EBS
+     volume can only attach to an instance in its own AZ.
+   - **Public**, i.e. its route table has a `0.0.0.0/0` route to an **internet
+     gateway**. Check under the subnet's *Route table* tab.
+
+**Capture:**
+- The VPC ID → `terraform.tfvars : my_vpc_id`
+- The Subnet ID → `terraform.tfvars : my_subnet_id`
+
+**Gotchas**
+- **"Auto-assign public IPv4" is not what makes a subnet public.** That flag only
+  controls whether instances get a public IP automatically; reachability comes from
+  the route table. A subnet can have the flag off and still be public — which is the
+  normal case here, since `main.tf` sets `associate_public_ip_address = true` itself.
+  Conversely, a subnet with the flag on but no internet-gateway route is still private.
+- **The instance needs a public IP at launch even though you allocated an Elastic IP.**
+  Terraform's file provisioners connect over SSH to the instance's own public address,
+  and the Elastic IP is only associated *after* the instance finishes creating. Without
+  a launch-time public IP the provisioners have nothing to connect to.
+- **If your account has no default VPC**, these values are mandatory. Omitting the
+  subnet, or attaching security groups by *name* rather than id, fails with
+  `VPCIdNotSpecified: No default VPC for this user. GroupName is only supported for
+  EC2-Classic and default VPC` — a confusing message that looks like a permissions
+  problem but is not.
+- A subnet in the wrong AZ only fails later, when the volume attachment runs — long
+  after the instance is created.
 
 ## Step 4 — 🖐 Create the persistent EBS data volume
 The stack's data (MariaDB, SuiteCRM, Joomla, James) lives on a persistent EBS
@@ -282,6 +427,300 @@ ever breaks, your mail still authenticates. The mechanics are in
   failed one.
 - In the re-test, `smtp.mailfrom=` should now show your `bounce.` subdomain instead
   of `amazonses.com`.
+
+## Step 11 — 🖐 Download the MariaDB JDBC driver (`jdbc.jar`)
+**Why:** The Apache James image ships without a database driver. `compose.yml`
+bind-mounts a repo-root `jdbc.jar` to `/root/libs/jdbc.jar` inside the container,
+and a file provisioner in `main.tf` copies it to the server during `apply`.
+Without the file the apply fails at that provisioner; with the wrong file James
+starts but cannot reach the database.
+
+**Procedure**
+1. Open the MariaDB connectors download page:
+   <https://mariadb.com/downloads/connectors/>
+2. Select the **Connectors** tab, then choose **"Java 8+ connector"** from the
+   product dropdown. Download the plain `.jar` it offers (see the first gotcha).
+3. Rename the downloaded file to exactly **`jdbc.jar`**.
+4. Move it into the **infra repo root** — the same directory as `main.tf` — because
+   the provisioner reads it from `./jdbc.jar`.
+5. Confirm you got the right artifact:
+   ```
+   unzip -p jdbc.jar META-INF/services/java.sql.Driver      # → org.mariadb.jdbc.Driver
+   unzip -p jdbc.jar META-INF/MANIFEST.MF | grep Bundle-Version
+   ```
+6. Check that `db_driver_className` and `db_software` in your `terraform.tfvars`
+   agree with what you downloaded — they generate `database.driverClassName` and the
+   `jdbc:<db_software>://` URL in `james-database.properties`. For this connector
+   they are `org.mariadb.jdbc.Driver` and `mariadb`.
+
+**Gotchas**
+- The download page also offers OS packages (`.deb` / `.rpm` / `.msi`). You want the
+  bare **JAR**, not an installer.
+- The filename is hardcoded in both the compose mount and the file provisioner, so a
+  versioned name like `mariadb-java-client-x.y.z.jar` is simply not found. Rename it.
+- MySQL's Connector/J is a *different* artifact with a different driver class
+  (`com.mysql.cj.jdbc.Driver`). If you switch `db_software`, the jar and
+  `db_driver_className` must change together.
+- `*.jar` is git-ignored, so this file never travels with the repo — everyone
+  building a server downloads their own copy.
+- Connector/J 3.x requires Java 8 or newer, which the James JPA image satisfies.
+  Even so, check the first James boot log: a driver mismatch surfaces there, not at
+  `terraform apply` time.
+
+## Step 12 — 🖐 Fill the passwords and your own IP in `terraform.tfvars`
+**Why:** Step 1 copied the example with `TODO-*` placeholders; nothing generates
+these for you. None of the variables has a default, so an unfilled one either stops
+`terraform plan` to prompt you or — with `-input=false` — fails outright. This step
+clears every placeholder except the post-deploy ones.
+
+**Procedure**
+1. **`TODO-PWMGR-*` — passwords you invent and store in a password manager.** Thirteen
+   of them, in four groups:
+   - **Databases** (`db_root_password`, `james_db_password`, `crm-db-password`,
+     `joomla_db_password`) — used to create the accounts in `database_init.sql` and
+     handed to the services as environment variables.
+   - **Mail users** (`admin_password`, `crm_password`, `fbl_password`,
+     `dmarc_reports_password`, `joomla_password`, `api_joomla_password`) — one per
+     mailbox `james_initialize.sh` creates. You will type these into a mail client
+     later, so keep them retrievable.
+   - **Application accounts** (`crm_user_password`, `rest_api_db_password`).
+   - **The James keystore** (`james_keystore_password`) — protects the PKCS12 store that
+     serves TLS on SMTP and IMAP. `SSL_Agent.sh` builds the store with it and the
+     smtp/imap configs read it back, so all three come from this one variable and cannot
+     drift. Apache James's sample configuration ships a well-known default password;
+     **do not reuse it** — anyone who obtains the keystore could read your private key.
+2. **`TODO-YOURS-*` — your own environment values.** By this point `domain_name`,
+   `key_pair_name` and `ssh_private_key_file` are already set (Steps 5 and 7). Two
+   remain: `crm_user_username` (the CRM admin login you want) and `my_ip_address`,
+   **your own** public IP for SSH allow-listing — not the server's. Find it with:
+   ```
+   curl -s https://checkip.amazonaws.com
+   ```
+   Write it as a single-host CIDR, e.g. `203.0.113.7/32`.
+3. **Leave `TODO-POSTDEPLOY-*` alone.** The SuiteCRM OAuth2 client id/secret and the
+   Joomla API token are issued by those applications' own admin UIs and cannot exist
+   before the stack runs. They are filled in a later step.
+4. **Note the three switches that are not placeholders** but decide what an `apply`
+   actually does: `bootstrap_run` (Step 13), `certificate_subdomains` (Step 14) and
+   `container_volume_initialize` (Step 16). Leave them at their example values for now;
+   each is set deliberately in the step that needs it.
+
+**Verify**
+```
+grep -n "TODO-" terraform.tfvars     # should list only the TODO-POSTDEPLOY-* lines
+terraform plan -input=false          # must complete without prompting for input
+```
+A plan that stops to ask for a value means you missed one; a "Value for undeclared
+variable" warning means your tfvars has an entry the configuration no longer
+declares.
+
+**Gotchas**
+- **Avoid shell metacharacters in passwords.** The mail-user passwords are
+  interpolated *unquoted* into generated shell commands
+  (`docker exec james bash -c "james-cli AddUser …"`), and the database passwords
+  land in generated SQL. A `$`, backtick, quote or backslash will be eaten or will
+  break the generated file — and the failure surfaces at container-init time on the
+  server, long after `apply` reported success. Long alphanumeric passwords with
+  `-` `_` `.` are safe.
+- **The mail-user list and the variable list must agree.** Adding or removing a
+  mailbox means touching four places: the `variable` block and the script body in
+  `___ShredModules___/file_gen_james_initialize_sh/main.tf`, and the `variable`
+  block and module wiring in the root `main.tf` — plus `terraform.tfvars` and
+  `terraform.tfvars.example`. Miss the tfvars entry and Terraform prompts for it;
+  miss the removal and you get an undeclared-variable warning.
+- **`my_ip_address` must be a CIDR, not a bare IP.** It goes straight into the SSH
+  rule's `cidr_blocks`, so `203.0.113.7` fails the plan with "is not a valid CIDR
+  block". Append `/32`.
+- **A home IP is usually dynamic.** When your ISP changes it, SSH ingress stops
+  matching; update the value and re-apply.
+- `terraform.tfvars` is git-ignored, `terraform.tfvars.example` is **not** — never
+  put a real password in the example.
+
+## The chicken-and-egg problem, and how Steps 13–16 solve it
+Read this before running anything: it explains why the server is built **twice**.
+
+Nginx needs Let's Encrypt certificates and James needs a keystore — but neither can exist
+before the server does. Certbot must prove control of your domain from the machine the DNS
+records point at, and it does so over HTTP-01, which needs **port 80**. Nginx publishes
+port 80. So the certificates cannot be obtained while the stack that needs them is running.
+
+The way out is a throwaway **bootstrap run**: bring up the instance with the container
+stack suppressed, let certbot have port 80, build the keystore from the certificate it
+issues, copy both down to your workstation, then destroy it and build the real server with
+those files in hand.
+
+```
+Step 13  bootstrap apply   → instance up, no containers, port 80 free
+Step 14  SSL_Agent.sh      → certbot issues the certificate, keystore is built
+Step 15  SSL_Fetch.sh      → four PEMs + keystore land in ./SSL-certificates/
+Step 16  production apply  → real certificates provisioned, stack starts
+```
+
+Only Step 16 produces the server you keep. Steps 13–15 exist purely to manufacture five
+files, and you repeat them only when the certificate needs re-issuing for new names.
+
+## Step 13 — 🖐 The bootstrap run
+**Why:** to get a host with a public IP and port 80 free, so certbot can run.
+
+**Procedure**
+1. Set `bootstrap_run = "true"` in `terraform.tfvars`. This comments the
+   `docker-compose … up -d` line out of `user_data`, so no container starts.
+2. Leave `container_volume_initialize = "false"`. The bootstrap host writes nothing worth
+   keeping, so there is no reason to format the data volume yet — that belongs to Step 16.
+3. **Create the five placeholder files the certificate provisioners require.** Terraform
+   copies `./SSL-certificates/{fullchain,privkey,cert,chain}.pem` and
+   `./SSL-certificates/keystore` to the server, and a `file` provisioner fails the apply if
+   its source is missing. It does not care that the file is empty:
+   ```
+   mkdir -p SSL-certificates
+   touch SSL-certificates/{fullchain,privkey,cert,chain}.pem SSL-certificates/keystore
+   ```
+4. `terraform apply`.
+
+**Verify:** the instance reaches `running`, and SSH works:
+```
+ssh -i <your-key>.pem ec2-user@<elastic-ip>
+```
+
+**Gotchas**
+- **An HCL `provisioner` block cannot be switched off by a variable**, which is why the
+  placeholder files are needed rather than a flag. `bootstrap_run` can suppress *shell
+  lines* inside `user_data`, but not a provisioner.
+- **A private key file must not be group- or world-readable.** OpenSSH refuses it with
+  `UNPROTECTED PRIVATE KEY FILE … Permissions 0664 are too open` and falls back to asking
+  for a password that does not exist. Fix with `chmod 400 <your-key>.pem`. This is a
+  client-side check and has nothing to do with AWS.
+- **Expect errors in the boot log, and ignore them.** `user_data` runs under `set -x`, not
+  `set -e`, so it continues past failures. On a bootstrap run the `mount` of the
+  unformatted volume fails, `chown` on volume subdirectories that do not exist yet fails,
+  and the REST-container truststore import fails because no container is running. None of
+  these matter here. Read the log with:
+  ```
+  sudo grep -nE "Thusia server setup|command not found|mount:" /var/log/cloud-init-output.log
+  ```
+- Terraform's file provisioners connect to the instance's **own** public address, so the
+  subnet must give it one at launch (Step 3) — the Elastic IP is associated only after the
+  instance finishes creating, which is too late for provisioning.
+
+## Step 14 — 🖐 Obtain the certificate and build the keystore
+**Why:** this is the only step that talks to Let's Encrypt. It produces the four PEMs
+Nginx mounts and the PKCS12 keystore James serves TLS from.
+
+**Before you run it,** check `certificate_subdomains` in `terraform.tfvars`. It lists the
+subdomain labels included alongside the apex, and it must contain **`mail`** — James serves
+SMTP and IMAP TLS on that hostname, and a certificate without it makes every mail client
+report a name mismatch. Add any other web hostname you intend to serve at the same time.
+
+**Procedure** (on the server, over SSH):
+```
+sudo chmod +x ~/SSL_Agent.sh
+sudo bash ~/SSL_Agent.sh
+```
+The script installs certbot, requests one certificate covering the apex plus every label in
+`certificate_subdomains`, copies the four PEMs into the home directory, builds the keystore
+with `openssl pkcs12 -export` using `james_keystore_password`, and restricts the two files
+that contain the private key to mode 600.
+
+**Verify:**
+```
+ls -l ~/{fullchain,privkey,cert,chain}.pem ~/keystore
+sudo openssl x509 -in ~/fullchain.pem -noout -dates -ext subjectAltName
+```
+Every name you asked for must appear in the SAN list.
+
+**Gotchas**
+- **Every name is validated, so every name must already resolve to this server.** Certbot
+  requests one certificate covering all of them and a single unresolvable label fails the
+  **whole** request — you get no certificate at all, not a partial one. Create the DNS
+  A-record before adding a label to `certificate_subdomains`.
+- **Let's Encrypt allows 5 certificates per week for an identical set of names.** Get the
+  name list right before running, rather than issuing repeatedly and discovering the limit.
+  Adding a name later costs another issuance, so add planned hostnames up front.
+- **Nothing must be listening on port 80.** Certbot `--standalone` binds it itself. This is
+  exactly what `bootstrap_run = "true"` guarantees; if you run this on a live server the
+  request fails.
+- **The keystore is derived from the certificate**, so re-issuing for new names means
+  rebuilding it. The script does that automatically on every run — but a keystore you built
+  by hand earlier will *not* match a newly issued certificate.
+- Terraform copies this script to the server but never executes it. That is deliberate:
+  it consumes a rate-limited external resource, so it stays a manual step.
+
+## Step 15 — 🖐 Fetch the certificates and keystore, and verify them
+**Why:** the files must live on your workstation, because Terraform provisions them from
+`./SSL-certificates/` on every subsequent apply. The bootstrap host is about to be thrown
+away.
+
+**Procedure** (on your workstation, from the infra repo root):
+```
+bash SSL_Fetch.sh
+```
+It SCPs the four PEMs and the keystore from the server into `./SSL-certificates/`,
+overwriting the empty placeholders from Step 13, and restricts `privkey.pem` and `keystore`
+to mode 600.
+
+**Verify — do not skip this.** A keystore that cannot be opened with the configured
+password is indistinguishable from a good one until James fails to start:
+```
+openssl pkcs12 -info -in SSL-certificates/keystore \
+  -passin pass:<james_keystore_password> -nokeys -noout
+```
+Success prints the MAC and bag details. `Mac verify error: invalid password?` means the
+store does not match your configuration — rebuild it (see below). Confirm the contents
+match the certificate too:
+```
+openssl x509 -in SSL-certificates/fullchain.pem -noout -subject -ext subjectAltName
+ls -l SSL-certificates/
+```
+All five files must be non-empty; a 0-byte file means a placeholder was never overwritten.
+
+**Gotchas**
+- **`SSL-certificates/` is git-ignored** (`/SSL-certificates/*` and `*certificate*`), so
+  these files never travel with the repo. They are also the only copy of your keystore —
+  back them up somewhere safe, because losing them means another certbot issuance.
+- **The keystore can be rebuilt locally without the server**, since it derives entirely
+  from two PEM files:
+  ```
+  openssl pkcs12 -export -in SSL-certificates/fullchain.pem \
+    -inkey SSL-certificates/privkey.pem -name james \
+    -out SSL-certificates/keystore -passout pass:<james_keystore_password>
+  chmod 600 SSL-certificates/keystore
+  ```
+  Read the password out of `terraform.tfvars` rather than retyping it — a typo here
+  produces exactly the mismatch this step is checking for.
+- Run the script from the repo root. Both the SSH key and the destination are relative
+  paths.
+
+## Step 16 — 🖐 The production run
+**Why:** this builds the server you keep, with real certificates and the container stack
+running.
+
+**Procedure**
+1. `bootstrap_run = "false"` — the stack now starts.
+2. `container_volume_initialize = "true"` — **only** if the EBS data volume is still
+   brand-new and unformatted. This formats it, creates the per-service subdirectories, and
+   runs the James and SuiteCRM initializers.
+3. `terraform apply`. If a bootstrap instance is still running, the `user_data` change
+   replaces it, which is what you want — provisioners only run when an instance is created.
+4. **Immediately set `container_volume_initialize` back to `"false"`** and keep it there.
+
+**Verify:** the site answers over HTTPS on each of your hostnames, and on the server:
+```
+sudo docker ps                    # every container up
+sudo docker logs james 2>&1 | tail -40
+```
+
+**Gotchas**
+- **`container_volume_initialize = "true"` reformats the data volume — it destroys
+  everything on it.** It is safe exactly once, on a volume with nothing to lose. Leaving it
+  `"true"` means the *next* apply wipes your databases.
+- **The mail-user and CRM initializers only run when it is `"true"`**, so on a brand-new
+  volume it must be `"true"` for this run or you get a running stack with no mailboxes.
+- You can destroy the bootstrap instance first (`terraform destroy`) rather than letting
+  Terraform replace it. The Elastic IP and the EBS volume are pre-existing resources that
+  Terraform only associates, so neither is destroyed — and the certificates are already
+  safely on your workstation.
+- The three `TODO-POSTDEPLOY-*` values in `terraform.tfvars` can only be filled after this
+  step, from the SuiteCRM and Joomla admin UIs.
 
 ## Next
 _(added here as we work through the remaining steps)_

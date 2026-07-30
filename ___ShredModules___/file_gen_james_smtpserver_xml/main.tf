@@ -1,3 +1,4 @@
+variable "james_keystore_password" {}
 resource "local_file" "smtpserver_xml" {
   #This module generate the file /etc/hosts.
   #This file defines which requests must be accepted by the server.
@@ -12,7 +13,7 @@ resource "local_file" "smtpserver_xml" {
 		<tls socketTLS="false" startTLS="true">
 			<keystore>file://conf/keystore</keystore>
 			<keystoreType>PKCS12</keystoreType>
-			<secret>james72laBalle</secret>
+			<secret>${var.james_keystore_password}</secret>
 			<provider>org.bouncycastle.jce.provider.BouncyCastleProvider</provider>
 			<algorithm>SunX509</algorithm>
 		</tls>
@@ -45,7 +46,7 @@ resource "local_file" "smtpserver_xml" {
              -->
             <keystore>file://conf/keystore</keystore>
             <keystoreType>PKCS12</keystoreType>
-            <secret>james72laBalle</secret>
+            <secret>${var.james_keystore_password}</secret>
             <provider>org.bouncycastle.jce.provider.BouncyCastleProvider</provider>
             <algorithm>SunX509</algorithm>
 
@@ -53,7 +54,7 @@ resource "local_file" "smtpserver_xml" {
             <!-- <privateKey>file://conf/private.key</privateKey> -->
             <!-- <certificates>file://conf/certs.self-signed.csr</certificates> -->
             <!-- An optional secret might be specified for the private key -->
-            <!-- <secret>james72laBalle</secret> -->
+            <!-- <secret>${var.james_keystore_password}</secret> -->
         </tls>
         <connectiontimeout>360</connectiontimeout>
         <connectionLimit>0</connectionLimit>
@@ -95,7 +96,7 @@ resource "local_file" "smtpserver_xml" {
              -->
             <keystore>file://conf/keystore</keystore>
             <keystoreType>PKCS12</keystoreType>
-            <secret>james72laBalle</secret>
+            <secret>${var.james_keystore_password}</secret>
             <provider>org.bouncycastle.jce.provider.BouncyCastleProvider</provider>
             <algorithm>SunX509</algorithm>
 
@@ -103,7 +104,7 @@ resource "local_file" "smtpserver_xml" {
             <!-- <privateKey>file://conf/private.key</privateKey> -->
             <!-- <certificates>file://conf/certs.self-signed.csr</certificates> -->
             <!-- An optional secret might be specified for the private key -->
-            <!-- <secret>james72laBalle</secret> -->
+            <!-- <secret>${var.james_keystore_password}</secret> -->
         </tls>
         <connectiontimeout>360</connectiontimeout>
         <connectionLimit>0</connectionLimit>

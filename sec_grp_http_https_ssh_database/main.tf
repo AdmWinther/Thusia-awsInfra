@@ -18,6 +18,10 @@ variable "rest_api_port_on_host" {
   type        = string
 }
 
+variable "my_ip_address" {
+  description = "The IP address of the system that is allowed to do SSH into the server."
+}
+
 resource "aws_security_group" "http_https_ssh_database" {
   name        = "http_https_ssh_database_sg"
   description = "Allow SSH and HTTP and HTTPS traffic"
@@ -84,7 +88,7 @@ resource "aws_security_group" "http_https_ssh_database" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip_address]
   }
 
   #allow Mariadb port

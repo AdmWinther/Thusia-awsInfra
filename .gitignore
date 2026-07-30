@@ -1,9 +1,30 @@
 ### Terraform ###
 /.terraform/
 /test-module/
+/SSL-certificates/*
 *.tfvars
 *.tfstate.backup
 *.tfstate
+
+### Terraform-generated config ####
+# Written into the repo root by the file_gen_* modules on every apply, and
+# regenerable from terraform.tfvars alone. Several carry plaintext secrets
+# (DB and mail passwords, API tokens, the James keystore password), so they
+# must never be committed.
+/compose.yml
+/database_init.sql
+/james_initialize.sh
+/crm_initialize.sh
+/SSL_Agent.sh
+/SSL_Fetch.sh
+/nginx.conf
+/hosts
+/php.ini
+/.htaccess
+/smtpserver.xml
+/imapserver.xml
+/mailetcontainer.xml
+/keystore
 
 ### config files ####
 *.zip
