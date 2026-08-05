@@ -6,6 +6,9 @@
 *.tfstate.backup
 *.tfstate
 
+### IntelliJ IDE ###
+./.idea/
+
 ### Terraform-generated config ####
 # Written into the repo root by the file_gen_* modules on every apply, and
 # regenerable from terraform.tfvars alone. Several carry plaintext secrets
@@ -45,5 +48,4 @@ james_keystore_with_ssl_certificate_do_not_delete
 *.crt
 *AccessKey*
 
-### IntelliJ IDE ###
-./.idea/*
+
