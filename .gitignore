@@ -7,7 +7,7 @@
 *.tfstate
 
 ### IntelliJ IDE ###
-./.idea/
+/.idea/
 
 ### Terraform-generated config ####
 # Written into the repo root by the file_gen_* modules on every apply, and
