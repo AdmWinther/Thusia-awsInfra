@@ -22,8 +22,8 @@ resource "local_file" "SSL_Agent" {
   file_permission = "0700"
   content  = replace( <<EOF
 #!/bin/bash
-# Run ON THE SERVER with sudo, while nothing is holding port 80 — certbot
-# --standalone binds it itself, so the container stack must be down
+# Run ON THE SERVER with sudo, while nothing is holding port 80 — certbot --standalone
+# binds it itself, so the container stack must be down
 # (bootstrap_run = true keeps it down).
 set -euo pipefail
 

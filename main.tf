@@ -97,6 +97,8 @@ variable "joomla-docker-image" {}
 variable "joomla_volume" {}
 variable "joomla_web_port_On_host" {}
 variable "joomla_max_package_size" {}
+variable "joomla_admin_username" {}
+variable "joomla_admin_password" {}
 
 #Wordpress related variables
 # variable "wordpress-container-name" {}
@@ -144,6 +146,8 @@ module "file_gen_docker_compose_yml" {
     home-directory        = var.home-directory
     docker-network        = var.docker-network
 
+    domain_name = var.domain_name
+
     db-container-name     = var.db-container-name
     db-docker-image       = var.db-docker-image
     db_root_password      = var.db_root_password
@@ -176,6 +180,8 @@ module "file_gen_docker_compose_yml" {
     joomla_db_password     = var.joomla_db_password
     joomla_volume          = var.joomla_volume
     joomla_web_port_on_host = var.joomla_web_port_On_host
+    joomla_admin_username = var.joomla_admin_username
+    joomla_admin_password   = var.joomla_admin_password
 
     rest-api-container-name = var.rest-api-container-name
     rest_api_docker_image   = var.rest_api_docker_image
@@ -250,6 +256,7 @@ module "file_gen_james_imapserver_xml" {
 
 module "file_gen_smtpserver_xml" {
     james_keystore_password = var.james_keystore_password
+    domain_name = var.domain_name
     source = "./___ShredModules___/file_gen_james_smtpserver_xml"
 }
 

@@ -1,4 +1,5 @@
 variable "james_keystore_password" {}
+variable "domain_name" {}
 resource "local_file" "smtpserver_xml" {
   #This module generate the file /etc/hosts.
   #This file defines which requests must be accepted by the server.
@@ -30,7 +31,7 @@ resource "local_file" "smtpserver_xml" {
 		<verifyIdentity>false</verifyIdentity>
 		<maxmessagesize>0</maxmessagesize>
 		<addressBracketsEnforcement>true</addressBracketsEnforcement>
-		<smtpGreeting>mail.awin.dk</smtpGreeting>
+		<smtpGreeting>mail.${var.domain_name}</smtpGreeting>
 		<handlerchain>
 			<handler class="org.apache.james.smtpserver.fastfail.ValidRcptHandler"/>
 			<handler class="org.apache.james.smtpserver.CoreCmdHandlerLoader"/>

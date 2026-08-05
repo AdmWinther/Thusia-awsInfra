@@ -41,7 +41,7 @@ resource "aws_security_group" "http_https_ssh_database" {
     from_port   = 8000
     to_port     = 8000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip_address]
   }
 
   # For the SUITECRM server, we need to allow port 8080 but since it is taken, we map it to 8086

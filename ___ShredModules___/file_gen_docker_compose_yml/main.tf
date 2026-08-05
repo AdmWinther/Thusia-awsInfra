@@ -2,6 +2,8 @@ variable "home-directory" {}
 #Docker related variables
 variable "docker-network" {}
 
+variable "domain_name" {}
+
 #Database Container related variables
 variable "db-container-name" {}
 variable "db-docker-image" {}
@@ -38,6 +40,8 @@ variable "joomla-container-name" {}
 variable "joomla-docker-image" {}
 variable "joomla_volume" {}
 variable "joomla_web_port_on_host" {}
+variable "joomla_admin_password" {}
+variable "joomla_admin_username" {}
 
 #Rest API related variables
 variable "rest-api-container-name" {}
@@ -134,7 +138,7 @@ services:
       DB_PORT: 3306
       DB_HOST: ${var.db-container-name}
       DB_NAME: ${var.crm-db-name}
-      SITE_URL: https://crm.awin.dk
+      SITE_URL: https://crm.${var.domain_name}
     networks:
       - ${var.docker-network}
     ports:
@@ -156,9 +160,9 @@ services:
       JOOMLA_DB_PASSWORD: ${var.joomla_db_password}
       JOOMLA_DB_NAME: ${var.joomla_db_name}
       JOOMLA_ADMIN_USER: Joomla_Admin
-      JOOMLA_ADMIN_USERNAME: admwinther
-      JOOMLA_ADMIN_PASSWORD: admin
-      JOOMLA_ADMIN_EMAIL: joomla@awin.dk
+      JOOMLA_ADMIN_USERNAME: ${var.joomla_admin_username}
+      JOOMLA_ADMIN_PASSWORD: ${var.joomla_admin_password}
+      JOOMLA_ADMIN_EMAIL: joomla@${var.domain_name}
     volumes:
       - ${var.home-directory}volumes/${var.joomla_volume}:/var/www/html
       - ${var.home-directory}php.ini:/usr/local/etc/php/php.ini
@@ -181,11 +185,11 @@ services:
       CRM_API_AuthenticationClientSecret: ${var.CRM_API_AuthenticationClientSecret}
       JOOMLA_API_TOKEN: ${var.JOOMLA_API_TOKEN}
       NEW_EMAIL_REQUEST_SECRET_KEY: "supersecretkey_you_store_in_env_or_config"
-      CRM_API_ServerUrl : "https://crm.awin.dk"
+      CRM_API_ServerUrl : "https://crm.${var.domain_name}"
       CRM_API_AllModulesUrl: "legacy/Api/V8/module"
       CRM_NewAccountModuleName: "Accounts"
       CRM_API_AuthenticationUrl: "legacy/Api/access_token"
-      JOOMLA_DOMAIN: "https://www.awin.dk/"
+      JOOMLA_DOMAIN: "https://www.${var.domain_name}/"
       JOOMLA_API_BASE_URL: "api/index.php/v1"
       JOOMLA_API_USERS: "/users"
       maximumNumberOfEmailsPerUser: 3

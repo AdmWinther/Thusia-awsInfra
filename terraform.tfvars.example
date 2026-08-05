@@ -116,6 +116,8 @@ joomla-docker-image = "joomla:5.3.2-php8.3-apache"
 joomla_web_port_On_host = "8081" #Joomla web interface will be mapped to this port of the server.
 joomla_volume = "joomla"
 joomla_max_package_size = "200M"
+joomla_admin_username = "TODO-PWMGR-Joomla_admin_username"
+joomla_admin_password = "TODO-PWMGR-Joomla_admin_password"
 
 ########################          Rest-API                   ########################
 rest-api-container-name = "rest"

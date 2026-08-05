@@ -474,7 +474,7 @@ these for you. None of the variables has a default, so an unfilled one either st
 clears every placeholder except the post-deploy ones.
 
 **Procedure**
-1. **`TODO-PWMGR-*` — passwords you invent and store in a password manager.** Thirteen
+1. **`TODO-PWMGR-*` — passwords you invent and store in a password manager.** Fifteen
    of them, in four groups:
    - **Databases** (`db_root_password`, `james_db_password`, `crm-db-password`,
      `joomla_db_password`) — used to create the accounts in `database_init.sql` and
@@ -483,7 +483,13 @@ clears every placeholder except the post-deploy ones.
      `dmarc_reports_password`, `joomla_password`, `api_joomla_password`) — one per
      mailbox `james_initialize.sh` creates. You will type these into a mail client
      later, so keep them retrievable.
-   - **Application accounts** (`crm_user_password`, `rest_api_db_password`).
+   - **Application accounts** (`crm_user_password`, `rest_api_db_password`,
+     `joomla_admin_username`, `joomla_admin_password`). The last two are the Joomla
+     administrator's login, handed to the container as environment variables and used by
+     the installer on first boot — so they are set *before* the stack ever runs, not
+     clicked in afterwards. The username sits in this group because it is one half of a
+     credential; keep both in the password manager. Joomla enforces a 12-character
+     minimum on the password.
    - **The James keystore** (`james_keystore_password`) — protects the PKCS12 store that
      serves TLS on SMTP and IMAP. `SSL_Agent.sh` builds the store with it and the
      smtp/imap configs read it back, so all three come from this one variable and cannot
