@@ -118,6 +118,7 @@ joomla_volume = "joomla"
 joomla_max_package_size = "200M"
 joomla_admin_username = "TODO-PWMGR-Joomla_admin_username"
 joomla_admin_password = "TODO-PWMGR-Joomla_admin_password"
+joomla_components_path = "../"   # where the Joomla component repos are checked out, relative to THIS repo; must end with a slash
 
 ########################          Rest-API                   ########################
 rest-api-container-name = "rest"
@@ -127,6 +128,7 @@ CRM_API_AuthenticationClientId = "TODO-POSTDEPLOY-crm_oauth2_client_id"       # 
 CRM_API_AuthenticationClientSecret = "TODO-POSTDEPLOY-crm_oauth2_client_secret"
 JOOMLA_API_TOKEN = "TODO-POSTDEPLOY-joomla_api_token"                          # Joomla → Users → API token (after deploy)
 CRM_Mask_Email_Module_Name = "ADAM_Mask_Email_Module"
+New_Mail_Request_Secret_key = "TODO-PWMGR-new_mail_request_secret_key"         # HMAC shared secret; generated into both Joomla components' config
 
 ########################          SSH KEY PAIR          ########################
 # The EC2 key pair you created in AWS, used to SSH into the instance during provisioning.

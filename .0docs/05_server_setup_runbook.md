@@ -17,7 +17,7 @@ otherwise the volume attachment fails. The region and AZ are set in `main.tf` (t
 provider `region` and `locals.availability_zone`); change them there if you use
 different ones.
 
-## Step 0 — 🖐 Local tooling and AWS credentials
+## Step 0 — 🖐 Local tooling, source repositories, and AWS credentials
 **Why:** Everything after this runs from your own machine: Terraform provisions the
 infrastructure and SSHes into the instance, and you use the AWS CLI to check the
 account. Neither is installed by anything in this repo.
@@ -108,8 +108,26 @@ account. Neither is installed by anything in this repo.
    aws sts get-caller-identity
    ```
    The `Arn` must end in `:user/<your-user-name>`.
+6. **Clone the Joomla component repositories next to this one.** The custom components
+   live in their own repositories, and Terraform writes a configuration file *into* two
+   of them, so the checkouts must exist before your first `apply`:
+   ```
+   cd ..                            # the directory that holds this repo
+   git clone <url>/JoomlaComponent_SignupForm_JV4
+   git clone <url>/JoomlaComponent_NewEmailForm_JV4
+   git clone <url>/JoomlaComponent_MaskEmailsList
+   git clone <url>/Joomla-Component-Template     # only if you will build new components
+   ```
+   Then set `joomla_components_path` in `terraform.tfvars` to the directory holding them,
+   relative to *this* repo and ending in a slash — `"../"` when they are siblings. They
+   stay independent repositories; nothing nests them inside this one.
 
 **Gotchas**
+- **A wrong `joomla_components_path` fails silently.** Terraform's `local_file` creates
+  any missing parent directory, so a typo or a missing checkout yields a brand-new tree
+  containing nothing but the generated config, an `apply` that reports success, and
+  components that never receive their settings. After your first apply, confirm each
+  file landed *inside* an existing checkout.
 - **`aws login` is not enough for Terraform.** The CLI's login session is cached in
   `~/.aws/login/` and read only by the CLI. Terraform reads `~/.aws/credentials`,
   the `AWS_*` environment variables, the SSO cache, or instance metadata — so the
@@ -474,8 +492,8 @@ these for you. None of the variables has a default, so an unfilled one either st
 clears every placeholder except the post-deploy ones.
 
 **Procedure**
-1. **`TODO-PWMGR-*` — passwords you invent and store in a password manager.** Fifteen
-   of them, in four groups:
+1. **`TODO-PWMGR-*` — passwords you invent and store in a password manager.** Sixteen
+   of them, in five groups:
    - **Databases** (`db_root_password`, `james_db_password`, `crm-db-password`,
      `joomla_db_password`) — used to create the accounts in `database_init.sql` and
      handed to the services as environment variables.
@@ -495,6 +513,17 @@ clears every placeholder except the post-deploy ones.
      smtp/imap configs read it back, so all three come from this one variable and cannot
      drift. Apache James's sample configuration ships a well-known default password;
      **do not reuse it** — anyone who obtains the keystore could read your private key.
+   - **The mask-request signing key** (`New_Mail_Request_Secret_key`) — a shared secret,
+     not a login. Both the Joomla components and the REST API hold it. When a component
+     sends a mask request it computes an HMAC-SHA256 over the exact JSON body using this
+     key and puts the result in an `X-Signature` header; the API recomputes it with its
+     own copy and rejects the request unless the two match. That proves the request came
+     from a holder of the key and that the body was not altered on the way — and the key
+     itself is never transmitted. Because both ends must hold the *identical* string,
+     Terraform writes it into the REST container's environment **and** into both
+     components' configuration files (Step 0, item 6), so it is never copied by hand.
+     Use a long random alphanumeric string. Rotating it is a two-sided change: re-apply,
+     then rebuild and reinstall the components.
 2. **`TODO-YOURS-*` — your own environment values.** By this point `domain_name`,
    `key_pair_name` and `ssh_private_key_file` are already set (Steps 5 and 7). Two
    remain: `crm_user_username` (the CRM admin login you want) and `my_ip_address`,
@@ -527,7 +556,8 @@ declares.
   land in generated SQL. A `$`, backtick, quote or backslash will be eaten or will
   break the generated file — and the failure surfaces at container-init time on the
   server, long after `apply` reported success. Long alphanumeric passwords with
-  `-` `_` `.` are safe.
+  `-` `_` `.` are safe. The mask-request signing key additionally lands inside a
+  **single-quoted PHP string**, so a `'` or `\` breaks the component configuration too.
 - **The mail-user list and the variable list must agree.** Adding or removing a
   mailbox means touching four places: the `variable` block and the script body in
   `___ShredModules___/file_gen_james_initialize_sh/main.tf`, and the `variable`
@@ -730,3 +760,5 @@ sudo docker logs james 2>&1 | tail -40
 
 ## Next
 _(added here as we work through the remaining steps)_
+- Installing the custom Joomla components (zip each checkout, install through the Joomla
+  admin UI) — to be documented once done.

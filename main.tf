@@ -82,6 +82,7 @@ variable "CRM_API_AuthenticationClientId" {}
 variable "CRM_API_AuthenticationClientSecret" {}
 variable "JOOMLA_API_TOKEN"{}
 variable "CRM_Mask_Email_Module_Name"{}
+variable "New_Mail_Request_Secret_key" {}
 
 variable "rest_api_docker_image" {}
 variable "rest-api-container-name" {
@@ -99,6 +100,7 @@ variable "joomla_web_port_On_host" {}
 variable "joomla_max_package_size" {}
 variable "joomla_admin_username" {}
 variable "joomla_admin_password" {}
+variable "joomla_components_path" {}
 
 #Wordpress related variables
 # variable "wordpress-container-name" {}
@@ -190,6 +192,7 @@ module "file_gen_docker_compose_yml" {
     CRM_API_AuthenticationClientSecret = var.CRM_API_AuthenticationClientSecret
     JOOMLA_API_TOKEN = var.JOOMLA_API_TOKEN
     CRM_Mask_Email_Module_Name = var.CRM_Mask_Email_Module_Name
+    New_Mail_Request_Secret_key = var.New_Mail_Request_Secret_key
 
     # wordpress-container-name = var.wordpress-container-name
     # wordpress-docker-image   = var.wordpress-docker-image
@@ -308,6 +311,17 @@ module "file_gen_joomla_php_ini" {
 
 module "file_gen_joomla_dot_htaccess" {
     source = "./___ShredModules___/file_gen_joomla_dot_htaccess"
+}
+
+# Writes the configuration file of each custom Joomla component into its own checkout,
+# so the shared HMAC secret is never copied by hand. Zip and install the components
+# through the Joomla admin UI after this has run.
+module "file_gen_joomla_components_configuration_php" {
+    source = "./___ShredModules___/file_gen_joomla_components_configuration_php"
+
+    New_Mail_Request_Secret_key = var.New_Mail_Request_Secret_key
+    domain_name                 = var.domain_name
+    joomla_components_path      = var.joomla_components_path
 }
 
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -570,7 +584,7 @@ resource "aws_instance" "my_instance" {
         #give the ownership fo the docker volume for database to mysql. MySQL needs it to write data into the volume.
         sudo chown -R 999:999 ${var.home-directory}volumes/${var.db_volume}/
 
-        fix ownership of the CRM volume
+        #fix ownership of the CRM volume
         sudo chown -R 999:999 ${var.home-directory}volumes/${var.crm_volume}/
 
         #Run the containers

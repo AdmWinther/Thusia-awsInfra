@@ -51,6 +51,7 @@ variable "CRM_API_AuthenticationClientId" {}
 variable "CRM_API_AuthenticationClientSecret" {}
 variable "JOOMLA_API_TOKEN" {}
 variable "CRM_Mask_Email_Module_Name" {}
+variable "New_Mail_Request_Secret_key" {}
 
 #Wordpress related variables
 # variable "wordpress-docker-image" {}
@@ -184,7 +185,7 @@ services:
       CRM_API_AuthenticationClientId: ${var.CRM_API_AuthenticationClientId}
       CRM_API_AuthenticationClientSecret: ${var.CRM_API_AuthenticationClientSecret}
       JOOMLA_API_TOKEN: ${var.JOOMLA_API_TOKEN}
-      NEW_EMAIL_REQUEST_SECRET_KEY: "supersecretkey_you_store_in_env_or_config"
+      NEW_EMAIL_REQUEST_SECRET_KEY: ${var.New_Mail_Request_Secret_key}
       CRM_API_ServerUrl : "https://crm.${var.domain_name}"
       CRM_API_AllModulesUrl: "legacy/Api/V8/module"
       CRM_NewAccountModuleName: "Accounts"

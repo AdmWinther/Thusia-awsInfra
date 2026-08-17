@@ -35,6 +35,9 @@
 *.conf
 *.config
 
+#### LOG Files #####
+*.log
+
 #### Packages #####
 *.jar
 
