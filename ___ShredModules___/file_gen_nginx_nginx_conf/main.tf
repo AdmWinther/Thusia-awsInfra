@@ -32,11 +32,7 @@ http{
       listen 443 ssl;
       server_name crm.${var.domain_name};
 
-      # ssl_certificate /etc/nginx/crm_https_ssl_certificate.crt;
-      # ssl_certificate_key /etc/nginx/crm_https_ssl_private_key.key;
-      # ssl_trusted_certificate /etc/nginx/crm_https_ssl_chain_certificate.crt;
-
-      ssl_certificate /etc/nginx/cert.pem;
+      ssl_certificate /etc/nginx/fullchain.pem;
       ssl_certificate_key /etc/nginx/privkey.pem;
       ssl_trusted_certificate /etc/nginx/chain.pem;
 
@@ -79,9 +75,6 @@ http{
   server {
       listen 443;
       server_name www.${var.domain_name};
-
-      # ssl_certificate /etc/nginx/www_https_ssl_fullchain.crt;
-      # ssl_certificate_key /etc/nginx/www_ssl_certificate_key.key;
 
       ssl_certificate /etc/nginx/fullchain.pem;
       ssl_certificate_key /etc/nginx/privkey.pem;

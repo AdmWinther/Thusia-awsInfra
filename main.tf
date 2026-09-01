@@ -303,6 +303,12 @@ module "file_gen_SSL_Fetch" {
     elastic_ip = var.elastic_ip
     home-directory = var.home-directory
 }
+
+module "file_gen_connect_sh" {
+    source = "./___ShredModules___/file_gen_connect_sh"
+    domain_name = var.domain_name
+    ssh_private_key_file = var.ssh_private_key_file
+}
 #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    JOOMLA CONFIG FILEs GENERATOR    XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 module "file_gen_joomla_php_ini" {
     source = "./___ShredModules___/file_gen_joomla_php_ini"

@@ -725,6 +725,13 @@ All five files must be non-empty; a 0-byte file means a placeholder was never ov
   produces exactly the mismatch this step is checking for.
 - Run the script from the repo root. Both the SSH key and the destination are relative
   paths.
+- **Do not run it with `sudo`.** The script writes into your own working copy, and under
+  `sudo` all five files end up owned by `root`. Because `privkey.pem` and the keystore are
+  mode 600, the user you run Terraform as can then no longer read them, and your next
+  `apply` fails on exactly those two file provisioners while the three world-readable ones
+  succeed — a partial failure that reads like a Terraform bug rather than a permissions
+  problem. If it happens, `chown` the directory back to your own user; the permission bits
+  are already correct and must not be widened.
 
 ## Step 16 — 🖐 The production run
 **Why:** this builds the server you keep, with real certificates and the container stack
@@ -758,7 +765,175 @@ sudo docker logs james 2>&1 | tail -40
 - The three `TODO-POSTDEPLOY-*` values in `terraform.tfvars` can only be filled after this
   step, from the SuiteCRM and Joomla admin UIs.
 
+## Step 17 — 🖐 Verify the stack and configure SuiteCRM's outbound mail
+**Why:** a successful `terraform apply` proves only that AWS accepted your resources. This
+step proves the containers actually run, that TLS is *complete* rather than merely present,
+and that the CRM can send mail.
+
+**Procedure**
+1. On the server, confirm every container is up and the mail server started cleanly:
+   ```
+   sudo docker ps
+   sudo docker logs james 2>&1 | tail -40
+   ```
+2. From your workstation, check each hostname over HTTPS — and check the **chain**, not
+   just the certificate:
+   ```
+   for h in <domain> www.<domain> api.<domain> crm.<domain> mail.<domain>; do
+     echo -n "$h: "
+     echo | openssl s_client -connect $h:443 -servername $h 2>&1 | grep 'Verify return code'
+   done
+   ```
+   Every line must read `0 (ok)`.
+3. Check the mail ports the same way, which is where a mail client will actually connect:
+   ```
+   echo | openssl s_client -connect mail.<domain>:993 -servername mail.<domain> 2>&1 | grep 'Verify return code'
+   echo | openssl s_client -connect mail.<domain>:465 -servername mail.<domain> 2>&1 | grep 'Verify return code'
+   ```
+4. Add one mailbox to a desktop mail client: IMAP `mail.<domain>` port 993 with SSL/TLS,
+   SMTP `mail.<domain>` port 465 with SSL/TLS, username the **full address**
+   (`admin@<domain>`, not `admin`), password from `terraform.tfvars`. Send a message
+   between two of your mailboxes.
+5. In SuiteCRM, Admin → Email Settings: From Address `crm@<domain>`, SMTP Mail Server
+   `mail.<domain>`, SMTP Port 465, "Enable SMTP over SSL or TLS" set to **SSL**, SMTP
+   authentication **enabled**, username `crm@<domain>` and its password from
+   `terraform.tfvars`. Send the test mail.
+
+**Verify:** every hostname reports `0 (ok)`, the mail client sends and receives, and
+SuiteCRM's test mail arrives — check the **spam folder** as well as the inbox, because a
+domain with no sending history often lands there first.
+
+**Gotchas**
+- **`0 (ok)` is the check that matters, not the list of names in the certificate.** A
+  server can present a certificate with every correct name and still be unusable: if it
+  sends only the leaf and omits the intermediates, browsers paper over the gap by fetching
+  them, while mail clients and anything Java-based simply refuse the connection. Point
+  `ssl_certificate` at `fullchain.pem`, never at `cert.pem` — and note that
+  `ssl_trusted_certificate` does **not** send the chain to clients; it is for OCSP stapling
+  and client-certificate verification.
+- **Any hostname without a `server_name` of its own is answered by the default server** —
+  the first block listening on that port. Its certificate is what unmatched names such as
+  `mail.<domain>` receive, so that one block is effectively your site-wide TLS default,
+  whatever its name suggests. Give the apex its own certificate directives rather than
+  letting it inherit.
+- **A mail client's "add security exception" dialog defaults to port 443**, i.e. your *web*
+  server. Typing a bare hostname there tests nginx and never contacts the mail server, so
+  the result is misleading. Include the port — `mail.<domain>:993`.
+- **The CRM container reaches the mail server over public DNS, not the docker network.**
+  The generated `hosts` file is copied only to the server's own `/etc/hosts` and is mounted
+  into no container, so this traffic leaves and re-enters through the internet gateway. It
+  works, but if that path is ever blocked, give the mail container a network alias for the
+  mail hostname rather than pointing the CRM at a container name — the certificate still
+  has to match the name the client uses.
+- **Point SuiteCRM at a hostname your certificate covers.** SuiteCRM 8 uses PHPMailer,
+  which verifies the peer name by default, so a mail host outside the certificate's names
+  fails even though the mail server itself is healthy.
+- Mail between two local mailboxes never leaves the machine and never touches your outbound
+  relay. It proves the mail server works; it proves nothing about relaying to the outside
+  world. Test with an external address.
+
+## Step 18 — 🖐 Create the SuiteCRM OAuth2 client for the REST API
+**Why:** the REST API is the integration hub — it talks to SuiteCRM to create, list and
+delete mask addresses. SuiteCRM authenticates those calls with OAuth2, so the API needs a
+client id and secret that can only be issued once SuiteCRM is running. This is one of the
+values that cannot be known before deployment, which is why `terraform.tfvars` ships it as
+a `TODO-POSTDEPLOY-*` placeholder.
+
+**Procedure**
+1. In SuiteCRM: **Admin → OAuth2 Clients and Tokens → New Client Credentials Client**.
+   Give it a name that identifies the caller (e.g. "RestAPI") and set its secret.
+2. Copy the generated **client id** and the **secret** into `terraform.tfvars`:
+   ```
+   CRM_API_AuthenticationClientId     = "…"
+   CRM_API_AuthenticationClientSecret = "…"
+   ```
+   These are credentials: they belong in `terraform.tfvars` only, never in a tracked file.
+3. **Deploy them.** Filling `terraform.tfvars` alone changes nothing on a running server —
+   see the gotchas below. Regenerate the compose file, copy it to the server, and
+   **recreate** the API container:
+   ```
+   terraform apply                       # regenerates compose.yml locally
+   scp -i <your-key>.pem compose.yml ec2-user@<domain>:<home-directory>compose.yml
+   # on the server, from the directory holding compose.yml:
+   sudo docker-compose up -d <rest-api-container-name>
+   ```
+
+**Verify:** the API container comes up with the real values rather than the placeholders:
+```
+sudo docker inspect <rest-api-container-name> \
+  --format '{{range .Config.Env}}{{println .}}{{end}}' | grep CRM_API_Authentication
+```
+Then exercise a mask operation end to end and confirm SuiteCRM accepts the token.
+
+**Gotchas**
+- **A container's environment is fixed when the container is created.** `docker restart`
+  re-uses it, so it will *not* pick up new values — you must recreate the container
+  (`docker-compose up -d <service>`). This is the single most common way to "fill in the
+  credentials" and still see the integration fail.
+- **`terraform apply` regenerates the compose file locally but does not send it.** File
+  provisioners run only when the instance is *created*, so any config change after the
+  first apply has to be copied up by hand. The same applies to every other generated file.
+- **Check the apply plan before running it on a live server.** If `user_data` has changed
+  since the instance was created — for instance because you reset
+  `container_volume_initialize` — applying it can stop and start the instance. Confirm
+  which of your services declare `restart: always`, because the rest will not come back on
+  their own and `user_data` does not re-run on reboot.
+- The client secret is stored by SuiteCRM as a hash and cannot be read back from the UI
+  afterwards. If you lose it, issue a new client rather than trying to recover it.
+- Some SuiteCRM guides suggest copying the client id into a local
+  `application.properties` and a Postman environment as well. Those are for developing and
+  testing the API by hand; the deployed stack takes its values from `terraform.tfvars`
+  through the generated compose file.
+
+## Step 19 — 🖐 Install the user-groups cleanup plugin, then create the API user
+**Why:** Joomla's default installation ships several user groups
+(Manager/Administrator/Author/Editor/Publisher) this project doesn't use. A custom system
+plugin removes them, but it hooks a per-request event rather than running once — leaving
+it enabled means it re-runs its cleanup query on every single page load, and will silently
+delete any future group that happens to share one of the cleaned titles. Once groups are
+cleaned up, the REST API needs its own Joomla user to call the API as — a Super User,
+because Web Services Login requires it — and that user's API token is the last credential
+`terraform.tfvars` needs.
+
+**Procedure**
+1. Immediately after the Joomla install wizard, before creating any custom groups you
+   intend to keep, install the cleanup plugin (Extensions → Manage → Install → zip from
+   its repo checkout).
+2. Enable it once from System → Manage → Plugins so its cleanup runs.
+3. **Disable it again right away**, from the same screen.
+4. Create a new user of type Super User for the REST API to authenticate as — a dedicated
+   address such as `api_joomla@<domain>`, not a personal admin account.
+5. Log out of your own admin account and log in as that new user. API tokens are
+   per-user, and Joomla generates them under the logged-in user's own profile — there is
+   no "create a token for another user" option.
+6. Still logged in as that user: Users → Manage → Your User → **API Tokens** tab → create
+   a new token.
+7. Copy the generated token into `terraform.tfvars`:
+   ```
+   JOOMLA_API_TOKEN = "…"
+   ```
+   This is a credential: it belongs in `terraform.tfvars` only, never in a tracked file.
+   Deploying it to the running `rest` container follows the same regenerate/copy/recreate
+   procedure as Step 18.
+
+**Verify:** Users → Groups shows only the groups you intend to keep; the plugin shows as
+disabled in the Plugins list; the new user appears with type Super User; a token-authenticated
+request to the Users API (`Authorization: Bearer <token>`) returns `200`, not `401`/`403`.
+
+**Gotchas**
+- This plugin uses the legacy (non-namespaced) Joomla plugin format. It has been confirmed
+  to load and run on this project's Joomla version, but the format is deprecated.
+- The cleanup runs raw `DELETE` queries against the groups table directly. It does not
+  clean up group memberships or access-rule references that pointed at the deleted groups
+  — those become orphaned rows, harmless but not truly clean.
+- A rewrite that runs the cleanup once at install time (via the extension's own install
+  script) instead of relying on manual enable/disable is tracked as project follow-up work.
+- The token is tied to the user, not to a role — deleting or blocking that Joomla user
+  invalidates every token issued to it, including the one already deployed to the REST
+  API.
+
 ## Next
 _(added here as we work through the remaining steps)_
-- Installing the custom Joomla components (zip each checkout, install through the Joomla
-  admin UI) — to be documented once done.
+- Step 20: the SuiteCRM email-verification workflow (`README_SuiteCRM.md` step 3) and the
+  mask-email module deployment; then installing the custom Joomla components (zip each
+  checkout, install through the Joomla admin UI). To be documented once done.

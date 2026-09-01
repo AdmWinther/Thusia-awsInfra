@@ -49,7 +49,7 @@ resource "aws_security_group" "http_https_ssh_database" {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip_address]
   }
 
   # For the Joomla web server, we need to allow port 80 but since it is taken, we map it to 8081
@@ -57,7 +57,7 @@ resource "aws_security_group" "http_https_ssh_database" {
     from_port   = var.joomla_web_port_On_host
     to_port     = var.joomla_web_port_On_host
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip_address]
   }
 
   # For our Rest-API server, we need to allow port 8080 but since it is taken, we map it to 8082
@@ -65,14 +65,14 @@ resource "aws_security_group" "http_https_ssh_database" {
       from_port   = var.rest_api_port_on_host    // Port for the REST API server
       to_port     = var.rest_api_port_on_host
       protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr_blocks = [var.my_ip_address]
   }
 
   ingress {
     from_port   = var.crm_web_port_on_host
     to_port     = var.crm_web_port_on_host
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip_address]
   }
 
   #allow HTTPS

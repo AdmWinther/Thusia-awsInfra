@@ -20,6 +20,7 @@
 /crm_initialize.sh
 /SSL_Agent.sh
 /SSL_Fetch.sh
+/connect.sh
 /nginx.conf
 /hosts
 /php.ini
