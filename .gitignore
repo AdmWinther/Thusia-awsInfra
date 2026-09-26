@@ -8,7 +8,7 @@
 
 ### IntelliJ IDE ###
 /.idea/
-
+.RestfulApiTool/
 ### Terraform-generated config ####
 # Written into the repo root by the file_gen_* modules on every apply, and
 # regenerable from terraform.tfvars alone. Several carry plaintext secrets
