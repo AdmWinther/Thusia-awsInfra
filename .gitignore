@@ -1,5 +1,5 @@
 ### Terraform ###
-/.terraform/
+**/.terraform/
 /test-module/
 /SSL-certificates/*
 *.tfvars
